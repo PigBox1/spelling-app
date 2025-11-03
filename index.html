@@ -903,145 +903,175 @@ button[disabled],
     }
   }
 
-  async function startNewRound(manual=false){
-    if (manual && autoNextTimer){ clearTimeout(autoNextTimer); autoNextTimer = null; }
+async function startNewRound(manual=false){
+  if (manual && autoNextTimer){ clearTimeout(autoNextTimer); autoNextTimer = null; }
 
-    // handle incomplete previous round (if there were attempts)
-    if (!roundEnded && attemptsThisRound.length > 0){
-      let best = 0; attemptsThisRound.forEach(a => { if (a.outcome === 'correct') best = Math.max(best, 1.0); else if (a.outcome === 'almost') best = Math.max(best, 0.6); });
-      const used = attemptsThisRound.length;
-      let multiplier = 0;
-      if (settings.mode === 'easy'){ const map = {1:0.5,2:0.3,3:0.2,4:0.1}; multiplier = map[used] || 0; }
-      else { multiplier = (used === 1 ? 0.3 : (used === 2 ? 0.1 : 0)); }
-      const secs = Math.max(0.01, (performance.now() - roundStart) / 1000);
-      const basePts = computePoints(best, currentWord, secs);
-      const modeMult = getModeScoreMultiplier();
-      const awarded = Math.round(basePts * multiplier * modeMult);
-      if (awarded > 0){ totalScore += awarded; updateScore(); showFloating(awarded, best===1 ? 'green' : (best>=0.6 ? 'yellow' : 'red')); }
-      stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: awarded, correct: best===1, incomplete:true, mode: settings.mode });
-      persistStats();
-    }
-
-    lastSubmitted = null; attemptsThisRound = []; roundEnded = false;
-    renderSegments(); resetSegments();
-    inputAnswer.value = ''; inputAnswer.disabled = false; btnCheck.disabled = false;
-    hintLine.textContent = '';
-
-    // reset replay count & play button enable
-    replayCount = 0;
-    if (btnPlay){ btnPlay.disabled = false; }
-
-    const level = settings.difficulty || 'proficient';
-    currentWord = pickWordForDifficulty(level);
-    roundStart = performance.now();
-
-    if (settings.mode === 'easy'){
-      const reveal = Math.min(1, Math.ceil(currentWord.length * 0.05));
-      hintLine.innerHTML = `<span style="color:#888">${escapeHtml(currentWord.slice(0,reveal))}</span>${'•'.repeat(Math.max(1,currentWord.length-reveal))}`;
-    } else {
-      hintLine.textContent = '';
-    }
-
-    // automatic initial spoken audio (do not count towards hardcore replay limit)
-    setTimeout(()=>{ 
-      const u = new SpeechSynthesisUtterance(currentWord);
-      if (settings.voice){
-        const v = speechSynthesis.getVoices().find(x => x.name === settings.voice);
-        if (v) u.voice = v;
-      }
-      u.rate = 0.95;
-      speechSynthesis.cancel();
-      speechSynthesis.speak(u);
-      // we intentionally do NOT set result text here
-    }, 320);
-    setTimeout(()=> inputAnswer.focus(), 700);
+  // handle incomplete previous round (if there were attempts)
+  if (!roundEnded && attemptsThisRound.length > 0){
+    let best = 0; attemptsThisRound.forEach(a => { if (a.outcome === 'correct') best = Math.max(best, 1.0); else if (a.outcome === 'almost') best = Math.max(best, 0.6); });
+    const used = attemptsThisRound.length;
+    let multiplier = 0;
+    if (settings.mode === 'easy'){ const map = {1:0.5,2:0.3,3:0.2,4:0.1}; multiplier = map[used] || 0; }
+    else { multiplier = (used === 1 ? 0.3 : (used === 2 ? 0.1 : 0)); }
+    const secs = Math.max(0.01, (performance.now() - roundStart) / 1000);
+    const basePts = computePoints(best, currentWord, secs);
+    const modeMult = getModeScoreMultiplier();
+    const awarded = Math.round(basePts * multiplier * modeMult);
+    if (awarded > 0){ totalScore += awarded; updateScore(); showFloating(awarded, best===1 ? 'green' : (best>=0.6 ? 'yellow' : 'red')); }
+    stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: awarded, correct: best===1, incomplete:true, mode: settings.mode });
+    persistStats();
   }
+
+  // reset state & UI
+  lastSubmitted = null;
+  attemptsThisRound = [];
+  roundEnded = false;
+  renderSegments();
+  resetSegments();
+
+  // reset input box styling and enable it
+  inputAnswer.value = '';
+  inputAnswer.disabled = false;
+  inputAnswer.style.borderColor = '';     // reset to CSS default
+  inputAnswer.style.background = 'transparent';
+  inputAnswer.style.color = '';           // in case previous code changed it
+
+  if (btnCheck) btnCheck.disabled = false;
+  hintLine.textContent = '';
+
+  // reset replay count & play button enable
+  replayCount = 0;
+  if (btnPlay){ btnPlay.disabled = false; }
+
+  const level = settings.difficulty || 'proficient';
+  currentWord = pickWordForDifficulty(level);
+  roundStart = performance.now();
+
+  if (settings.mode === 'easy'){
+    const reveal = Math.min(1, Math.ceil(currentWord.length * 0.05));
+    hintLine.innerHTML = `<span style="color:#888">${escapeHtml(currentWord.slice(0,reveal))}</span>${'•'.repeat(Math.max(1,currentWord.length-reveal))}`;
+  } else {
+    hintLine.textContent = '';
+  }
+
+  // automatic initial spoken audio (do not count towards hardcore replay limit)
+  setTimeout(()=>{ 
+    const u = new SpeechSynthesisUtterance(currentWord);
+    if (settings.voice){
+      const v = speechSynthesis.getVoices().find(x => x.name === settings.voice);
+      if (v) u.voice = v;
+    }
+    u.rate = 0.95;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+    // intentionally do NOT set any separate result text
+  }, 320);
+
+  setTimeout(()=> inputAnswer.focus(), 700);
+}
 
   function easyAttemptMultiplier(idx){ return ({1:1.0,2:0.8,3:0.6,4:0.4,5:0.2})[idx] || 0; }
 
-  function onCheck(){
-    if (!currentWord) return;
-    const raw = (inputAnswer.value || '').trim().toLowerCase();
-    if (!raw) return;
+function onCheck(){
+  if (!currentWord) return;
+  const raw = (inputAnswer.value || '').trim().toLowerCase();
+  if (!raw) return;
 
-    if (lastSubmitted !== null && raw === lastSubmitted){
-      inputAnswer.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}], {duration:220});
-      return;
-    }
-    lastSubmitted = raw;
+  if (lastSubmitted !== null && raw === lastSubmitted){
+    inputAnswer.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}], {duration:220});
+    return;
+  }
+  lastSubmitted = raw;
 
-    const exact = raw === currentWord;
-    const sim = similarityRatio(raw, currentWord);
-    let outcome = 'wrong', correctness = 0;
-    if (exact){ outcome = 'correct'; correctness = 1.0; }
-    else if (sim >= 0.75){ outcome = 'almost'; correctness = 0.6; }
+  const exact = raw === currentWord;
+  const sim = similarityRatio(raw, currentWord);
+  let outcome = 'wrong', correctness = 0;
+  if (exact){ outcome = 'correct'; correctness = 1.0; }
+  else if (sim >= 0.75){ outcome = 'almost'; correctness = 0.6; }
 
-    attemptsThisRound.push({ value: raw, outcome });
+  attemptsThisRound.push({ value: raw, outcome });
 
-    const idx = attemptsThisRound.length - 1;
-    if (outcome === 'correct'){
-      const usedBefore = attemptsThisRound.length - 1;
-      mergeRemainingIntoGreen(usedBefore);
+  const idx = attemptsThisRound.length - 1;
+  if (outcome === 'correct'){
+    const usedBefore = attemptsThisRound.length - 1;
+    mergeRemainingIntoGreen(usedBefore);
+  } else {
+    colorSegment(idx, outcome === 'almost' ? COLOR_YELLOW : COLOR_RED);
+    if (settings.mode === 'easy') inputAnswer.value = '';
+  }
+
+  if (settings.mode === 'easy') updateRevealHint();
+
+  const secs = Math.max(0.01, (performance.now() - roundStart) / 1000);
+  let pts = 0;
+  const modeMult = getModeScoreMultiplier();
+  if (outcome === 'correct'){
+    if (settings.mode === 'easy'){
+      const attemptNo = attemptsThisRound.length;
+      const mult = easyAttemptMultiplier(attemptNo);
+      pts = Math.round(computePoints(1.0, currentWord, secs) * mult * modeMult);
     } else {
-      colorSegment(idx, outcome === 'almost' ? COLOR_YELLOW : COLOR_RED);
-      if (settings.mode === 'easy') inputAnswer.value = '';
+      pts = Math.round(computePoints(1.0, currentWord, secs) * modeMult);
     }
+    totalScore += pts; updateScore(); showFloating(pts, 'green');
+  } else if (outcome === 'almost'){
+    if (settings.mode === 'easy'){ pts = Math.round(computePoints(0.6, currentWord, secs) * easyAttemptMultiplier(attemptsThisRound.length) * modeMult); }
+    else { pts = Math.round(computePoints(0.6, currentWord, secs) * modeMult); }
+    totalScore += pts; updateScore(); showFloating(pts, 'yellow');
+  } else {
+    showFloating(0, 'red');
+  }
 
-    if (settings.mode === 'easy') updateRevealHint();
+  // endings per mode
+  if (outcome === 'correct'){
+    roundEnded = true;
+    // show the correct word IN the textbox, disable it, and colour it green
+    inputAnswer.value = currentWord;
+    inputAnswer.disabled = true;
+    btnCheck.disabled = true;
+    inputAnswer.style.borderColor = COLOR_GREEN;
+    inputAnswer.style.background = 'rgba(76,175,80,0.06)';
+    inputAnswer.style.color = '#111';
 
-    const secs = Math.max(0.01, (performance.now() - roundStart) / 1000);
-    let pts = 0;
-    const modeMult = getModeScoreMultiplier();
-    if (outcome === 'correct'){
-      if (settings.mode === 'easy'){
-        const attemptNo = attemptsThisRound.length;
-        const mult = easyAttemptMultiplier(attemptNo);
-        pts = Math.round(computePoints(1.0, currentWord, secs) * mult * modeMult);
-      } else {
-        pts = Math.round(computePoints(1.0, currentWord, secs) * modeMult);
-      }
-      totalScore += pts; updateScore(); showFloating(pts, 'green');
-    } else if (outcome === 'almost'){
-      if (settings.mode === 'easy'){ pts = Math.round(computePoints(0.6, currentWord, secs) * easyAttemptMultiplier(attemptsThisRound.length) * modeMult); }
-      else { pts = Math.round(computePoints(0.6, currentWord, secs) * modeMult); }
-      totalScore += pts; updateScore(); showFloating(pts, 'yellow');
-    } else {
-      showFloating(0, 'red');
+    // clear separate result text (we now show result in textbox)
+    resultText.textContent = '';
+
+    stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: pts, correct:true, incomplete:false, mode: settings.mode });
+    persistStats();
+    if (settings.autoNext){
+      if (autoNextTimer) clearTimeout(autoNextTimer);
+      autoNextTimer = setTimeout(()=>{ startNewRound(false); autoNextTimer = null; }, 3000);
     }
+  } else {
+    const maxAttempts = settings.mode === 'easy' ? 5 : (settings.mode === 'hardcore' ? 1 : 3);
+    if (attemptsThisRound.length >= maxAttempts){
+      roundEnded = true;
+      btnCheck.disabled = true;
 
-    // endings per mode
-    if (outcome === 'correct'){
-      roundEnded = true; inputAnswer.disabled = true; btnCheck.disabled = true;
-      // show the correct word in the result text (green)
-      resultText.textContent = currentWord;
-      resultText.style.color = COLOR_GREEN;
-      stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: pts, correct:true, incomplete:false, mode: settings.mode });
+      // show correct word IN the textbox, disable it, and colour it red (failed)
+      inputAnswer.value = currentWord;
+      inputAnswer.disabled = true;
+      inputAnswer.style.borderColor = COLOR_RED;
+      inputAnswer.style.background = 'rgba(244,67,54,0.06)';
+      inputAnswer.style.color = '#111';
+
+      // clear separate result text (we now show result in textbox)
+      resultText.textContent = '';
+
+      colorAllSegments(COLOR_RED);
+      stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: 0, correct:false, incomplete:false, mode: settings.mode });
       persistStats();
-      if (settings.autoNext){
-        if (autoNextTimer) clearTimeout(autoNextTimer);
-        autoNextTimer = setTimeout(()=>{ startNewRound(false); autoNextTimer = null; }, 3000);
-      }
+      if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer = setTimeout(()=>{ startNewRound(false); autoNextTimer = null; }, 3000); }
     } else {
-      const maxAttempts = settings.mode === 'easy' ? 5 : (settings.mode === 'hardcore' ? 1 : 3);
-      if (attemptsThisRound.length >= maxAttempts){
-        roundEnded = true; inputAnswer.disabled = true; btnCheck.disabled = true;
-        // show correct word in result box (red)
-        resultText.textContent = currentWord;
-        resultText.style.color = COLOR_RED;
-        colorAllSegments(COLOR_RED);
-        stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: 0, correct:false, incomplete:false, mode: settings.mode });
-        persistStats();
-        if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer = setTimeout(()=>{ startNewRound(false); autoNextTimer = null; }, 3000); }
+      if (settings.mode !== 'hardcore') {
+        inputAnswer.value = ''; inputAnswer.focus();
       } else {
-        if (settings.mode !== 'hardcore') {
-          inputAnswer.value = ''; inputAnswer.focus();
-        } else {
-          // hardcore: only 1 attempt allowed -> disable input
-          inputAnswer.value = ''; inputAnswer.disabled = true; btnCheck.disabled = true;
-        }
+        // hardcore: only 1 attempt allowed -> disable input
+        inputAnswer.value = ''; inputAnswer.disabled = true; btnCheck.disabled = true;
       }
     }
   }
+}
 
   // Stats rendering
   function renderStats(){
