@@ -736,63 +736,115 @@ button[disabled],
   function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   // --- Robust loader: try wordslist.json, words.json, fallback to embedded ---
-  async function loadWords(){
-    wordPool = [];
-    async function tryFetch(name){
-      try {
-        const res = await fetch(name, { cache: 'no-store' });
-        const text = await res.text();
-        try { return JSON.parse(text); } catch(e){ console.warn(`${name} fetched but invalid JSON.`); return null; }
-      } catch(e){ return null; }
-    }
+  // Replace your existing loadWords() with this function
+async function loadWords(){
+  wordPool = [];
+  // maps canonical -> [variant1, variant2, ...] (all normalized)
+  window.variantsMap = window.variantsMap || {};
+  // maps canonical -> original display string (e.g. "color/colour")
+  window.displayMap = window.displayMap || {};
 
-    // only try network fetch when not file:// (CORS tripping). If file://, skip fetch to avoid errors.
-    if (location.protocol !== 'file:') {
-      let json = await tryFetch('wordslist.json');
-      if (!json) json = await tryFetch('words.json');
-      if (json){
-        let arr = Array.isArray(json) ? json : (Array.isArray(json.words) ? json.words : []);
-        arr = arr.map(it => {
-          if (!it) return null;
-          if (typeof it === 'string') return { word: it.toLowerCase(), level: 'easy' };
-          const w = it.word ? String(it.word).toLowerCase() : null;
-          const level = it.level ? String(it.level).toLowerCase() : 'easy';
-          if (!w) return null;
-          return { word: w, level };
-        }).filter(Boolean);
-        if (arr.length) {
-          wordPool = arr;
-          console.info('Loaded external word list:', wordPool.length, 'words');
-        }
-      }
-    }
-
-    // fallback to embedded
-    if (!wordPool.length){
-      try {
-        const embedded = JSON.parse(document.getElementById('embeddedWords').textContent);
-        const arr = (Array.isArray(embedded) ? embedded : embedded.words) || [];
-        wordPool = arr.map(it => {
-          if (!it) return null;
-          if (typeof it === 'string') return { word: it.toLowerCase(), level: 'easy' };
-          const w = it.word ? String(it.word).toLowerCase() : null;
-          const level = it.level ? String(it.level).toLowerCase() : 'easy';
-          if (!w) return null;
-          return { word: w, level };
-        }).filter(Boolean);
-        console.info('Using embedded word list, count:', wordPool.length);
-      } catch(e){
-        console.warn('Embedded words parse failed; loading tiny fallback.');
-        wordPool = [{word:'genuine',level:'easy'},{word:'resilient',level:'advanced'},{word:'ubiquitous',level:'proficient'}];
-      }
-    }
-
-    // build per-level queues
-    ['easy','advanced','proficient'].forEach(l=>{
-      const arr = wordPool.filter(w => w.level === l).slice();
-      queues[l] = shuffle(arr);
-    });
+  function normalizeToken(s){
+    if (!s) return '';
+    return String(s).trim().toLowerCase().replace(/(^"|"$)/g,'').replace(/^\uFEFF/, '');
   }
+  function extractVariantsFromField(field){
+    // convert parentheses to slash for predictable splitting: "colour (color)" -> "colour/color"
+    if (!field) return [];
+    let s = String(field).trim();
+    s = s.replace(/\(\s*([^)]+)\s*\)/g, '/$1');
+    // split on slash or comma
+    const parts = s.split(/\s*\/\s*|\s*,\s*/);
+    const out = [];
+    parts.forEach(p => {
+      const t = normalizeToken(p).replace(/^[^a-z0-9']+|[^a-z0-9']+$/g,'');
+      if (t && !out.includes(t)) out.push(t);
+    });
+    return out;
+  }
+
+  async function tryFetch(name){
+    try {
+      const res = await fetch(name, { cache: 'no-store' });
+      const text = await res.text();
+      try { return JSON.parse(text); } catch(e){ console.warn(`${name} fetched but invalid JSON.`); return null; }
+    } catch(e){ return null; }
+  }
+
+  // attempt network fetch (skip when running file:// to avoid CORS errors)
+  if (location.protocol !== 'file:') {
+    let json = await tryFetch('wordslist.json');
+    if (!json) json = await tryFetch('words.json');
+    if (json && Array.isArray(json) && json.length){
+      const expanded = [];
+      // for each entry expected {word: "color/colour", level: "easy"}
+      json.forEach(it => {
+        if (!it || !it.word) return;
+        const display = String(it.word).trim();
+        const variants = extractVariantsFromField(display);
+        if (!variants.length) return;
+        const canonical = variants[0]; // first variant as canonical token (normalized)
+        // store variants and displayMap
+        if (!window.variantsMap[canonical]) window.variantsMap[canonical] = [];
+        variants.forEach(v => {
+          if (!window.variantsMap[canonical].includes(v)) window.variantsMap[canonical].push(v);
+        });
+        window.displayMap[canonical] = display;
+        // push internal object (canonical internal word + level)
+        expanded.push({ word: canonical, level: (it.level || 'easy').toLowerCase() });
+      });
+      if (expanded.length){
+        wordPool = expanded;
+        console.info('Loaded external word list:', wordPool.length, 'words; variants registered:', Object.keys(window.variantsMap).length);
+      }
+    }
+  }
+
+  // fallback to embedded script tag id="embeddedWords" if nothing loaded
+  if (!wordPool.length){
+    try {
+      const embedded = JSON.parse(document.getElementById('embeddedWords').textContent);
+      const arr = (Array.isArray(embedded) ? embedded : embedded.words) || [];
+      const expanded = [];
+      arr.forEach(it => {
+        if (!it || !it.word) return;
+        const display = String(it.word).trim();
+        const variants = extractVariantsFromField(display);
+        if (!variants.length) return;
+        const canonical = variants[0];
+        if (!window.variantsMap[canonical]) window.variantsMap[canonical] = [];
+        variants.forEach(v => { if (!window.variantsMap[canonical].includes(v)) window.variantsMap[canonical].push(v); });
+        window.displayMap[canonical] = display;
+        expanded.push({ word: canonical, level: (it.level || 'easy').toLowerCase() });
+      });
+      if (expanded.length){
+        wordPool = expanded;
+        console.info('Using embedded word list, count:', wordPool.length);
+      }
+    } catch(e){
+      console.warn('Embedded words parse failed; loading tiny fallback.');
+      wordPool = [{word:'genuine',level:'easy'},{word:'resilient',level:'advanced'},{word:'ubiquitous',level:'proficient'}];
+      window.variantsMap = window.variantsMap || {};
+      window.displayMap = window.displayMap || {};
+      wordPool.forEach(w => { window.variantsMap[w.word] = [w.word]; window.displayMap[w.word] = w.word; });
+    }
+  }
+
+  // build per-level queues the same way you already did
+  ['easy','advanced','proficient'].forEach(l=>{
+    const arr = wordPool.filter(w => w.level === l).slice();
+    queues[l] = shuffle(arr);
+  });
+
+  // ensure every canonical has at least itself in variantsMap & displayMap
+  window.variantsMap = window.variantsMap || {};
+  window.displayMap = window.displayMap || {};
+  wordPool.forEach(w => {
+    if (!window.variantsMap[w.word]) window.variantsMap[w.word] = [w.word];
+    if (!window.displayMap[w.word]) window.displayMap[w.word] = w.word;
+  });
+}
+
 
   function pickWordForDifficulty(level){
     level = (level || 'proficient').toLowerCase();
@@ -972,6 +1024,7 @@ async function startNewRound(manual=false){
 
   function easyAttemptMultiplier(idx){ return ({1:1.0,2:0.8,3:0.6,4:0.4,5:0.2})[idx] || 0; }
 
+// Replace your current onCheck() with this function
 function onCheck(){
   if (!currentWord) return;
   const raw = (inputAnswer.value || '').trim().toLowerCase();
@@ -983,8 +1036,18 @@ function onCheck(){
   }
   lastSubmitted = raw;
 
-  const exact = raw === currentWord;
-  const sim = similarityRatio(raw, currentWord);
+  // get variants for the current canonical word
+  const variants = (window.variantsMap && window.variantsMap[currentWord]) || [currentWord];
+
+  // exact match: check against any variant
+  const exact = variants.includes(raw);
+
+  // similarity: take the best similarity between input and any variant
+  let sim = 0;
+  for (let v of variants){
+    sim = Math.max(sim, similarityRatio(raw, v));
+  }
+
   let outcome = 'wrong', correctness = 0;
   if (exact){ outcome = 'correct'; correctness = 1.0; }
   else if (sim >= 0.75){ outcome = 'almost'; correctness = 0.6; }
@@ -1025,15 +1088,15 @@ function onCheck(){
   // endings per mode
   if (outcome === 'correct'){
     roundEnded = true;
-    // show the correct word IN the textbox, disable it, and colour it green
-    inputAnswer.value = currentWord;
+    // show the correct answer IN the textbox (use displayMap to show combined display)
+    inputAnswer.value = window.displayMap && window.displayMap[currentWord] ? window.displayMap[currentWord] : currentWord;
     inputAnswer.disabled = true;
     btnCheck.disabled = true;
     inputAnswer.style.borderColor = COLOR_GREEN;
     inputAnswer.style.background = 'rgba(76,175,80,0.06)';
     inputAnswer.style.color = '#111';
 
-    // clear separate result text (we now show result in textbox)
+    // clear any separate resultText (textbox is now authoritative)
     resultText.textContent = '';
 
     stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: pts, correct:true, incomplete:false, mode: settings.mode });
@@ -1048,14 +1111,13 @@ function onCheck(){
       roundEnded = true;
       btnCheck.disabled = true;
 
-      // show correct word IN the textbox, disable it, and colour it red (failed)
-      inputAnswer.value = currentWord;
+      // show correct answer IN the textbox (display combined form), mark failure
+      inputAnswer.value = window.displayMap && window.displayMap[currentWord] ? window.displayMap[currentWord] : currentWord;
       inputAnswer.disabled = true;
       inputAnswer.style.borderColor = COLOR_RED;
       inputAnswer.style.background = 'rgba(244,67,54,0.06)';
       inputAnswer.style.color = '#111';
 
-      // clear separate result text (we now show result in textbox)
       resultText.textContent = '';
 
       colorAllSegments(COLOR_RED);
