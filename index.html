@@ -216,7 +216,7 @@ button[disabled],
   background: rgba(76,175,80,0.08);
 }
 
-/* --- Wipe Button --- */
+/* --- Wipe Button (transparent, red hover accent) --- */
 .stats-wipe-btn {
   width: 44px;
   height: 44px;
@@ -224,11 +224,18 @@ button[disabled],
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border: var(--ui-border) solid var(--muted-2);
+  border-radius: var(--ui-radius);
+  background: transparent;
+  color: var(--muted-2);
+  cursor: pointer;
+  transition: all 0.25s ease;
 }
 
 .stats-wipe-btn:hover {
   border-color: var(--accent-red);
   color: var(--accent-red);
+  background: transparent;
 }
 
 .stats-wipe-btn:hover i {
@@ -236,6 +243,7 @@ button[disabled],
   transform: scale(1.08);
   transition: color 0.15s ease, transform 0.15s ease;
 }
+
 
 /* --- Hint / Result --- */
 .result {
