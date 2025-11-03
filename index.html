@@ -62,6 +62,7 @@ header {
 }
 
 
+
 header h1 {
   font-size: 18px;
   margin: 0;
@@ -545,23 +546,22 @@ button[disabled],
 }
 
 .play-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto; /* same column layout as header */
   align-items: center;
   gap: 12px;
   margin-bottom: 20px;
+  width: 100%;
 }
 
-.play-row .btn-play {
-  flex: 0 0 var(--main-icon-size);
+.play-row > * {
+  grid-column: 2;
 }
 
 .play-row input.word-input {
-  flex: 1;
-  min-width: 0;
-  margin-right: 0;
-  border-radius: var(--ui-radius);
-  border: var(--ui-border) solid var(--muted-2);
-  box-sizing: border-box;
+  width: 100%;
+  flex: none;     /* ensure flex rules don't interfere (we're using grid) */
+  min-width: 0;   /* allow it to shrink if needed */
 }
 
 .play-row-inner {
