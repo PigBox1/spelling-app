@@ -14,7 +14,6 @@
   --accent-green: #4CAF50;
   --accent-yellow: #FFC107;
   --accent-red: #F44336;
-  --inner-pad: 28px; /* shared horizontal inset used by header & play row */
   --card-width: 760px;
   --shadow: 0 10px 30px rgba(20,20,30,0.06);
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
@@ -48,19 +47,17 @@ html, body {
   background: var(--card-bg);
   border-radius: var(--ui-radius);
   box-shadow: var(--shadow);
-  padding: 20px var(--inner-pad) 28px var(--inner-pad);
+  padding: 20px;
   box-sizing: border-box;
 }
 
 /* --- Header & Navigation --- */
 header {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
-
-
 
 header h1 {
   font-size: 18px;
@@ -113,8 +110,6 @@ input.word-input {
 input.word-input:focus {
   outline: none;
   border-color: var(--muted-2);
-  flex: 1 1 auto;
-  min-width: 0;
 }
 
 /* --- Universal Button Reset --- */
@@ -545,47 +540,27 @@ button[disabled],
 }
 
 .play-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  width: 100%;
-}
-.play-row .play-controls {
-  grid-column: 2;           /* put the wrapper into the right column */
-  display: flex;            /* lay out the inner controls horizontally */
-  align-items: center;
-  gap: 12px;
-  justify-content: flex-start; /* left align inside that right-column area */
-  width: 100%;              /* allow input to occupy remaining space inside wrapper */
-}
-
-.play-row > * {
-  grid-column: 2;
-}
-
-.play-row .play-controls input.word-input {
-  flex: 1 1 auto;
-  min-width: 0;
-  width: auto;
-}
-  
-.play-row input.word-input {
-  width: 100%;
-  flex: none;     /* ensure flex rules don't interfere (we're using grid) */
-  min-width: 0;   /* allow it to shrink if needed */
-}
-
-.play-row-inner {
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
-  justify-content: flex-end; /* keeps buttons aligned with the nav on the right */
+  margin-bottom: 20px;
+  margin-left: -2px; /* compensate for border width */
+  margin-right: -2px; /* keeps it perfectly aligned with tabs */
 }
 
-  
+.play-row .btn-play {
+  flex: 0 0 var(--main-icon-size);
+}
+
+.play-row input.word-input {
+  flex: 1;
+  min-width: 0;
+  margin-right: 0;
+  border-radius: var(--ui-radius);
+  border: var(--ui-border) solid var(--muted-2);
+  box-sizing: border-box;
+}
+
 .play-row .result {
   flex: 0 0 auto;
   max-width: 100px;
@@ -636,13 +611,10 @@ button[disabled],
         <!-- GAME -->
         <section id="pageGame">
           <div class="play-row" style="width:100%;">
-            <div class="play-controls">
-              <button id="btnPlay" class="btn-play" title="Play">…</button>
-              <input id="inputAnswer" class="word-input" … />
-              <div class="result" id="resultText">…</div>
-            </div>
+            <button id="btnPlay" class="btn-play" title="Play"><i class="fa-solid fa-play" style="font-size:14px"></i></button>
+            <input id="inputAnswer" class="word-input" placeholder="Type what you hear..." autocomplete="off" />
+            <div class="result" id="resultText" aria-live="polite"></div>
           </div>
-
 
           <!-- reused to show definition once round ends -->
           <div class="hint-line" id="hintLine" aria-hidden="true"></div>
