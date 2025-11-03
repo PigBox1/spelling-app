@@ -95,21 +95,21 @@ nav button.active {
 /* --- Input Fields --- */
 input.word-input {
   flex: 1;
-  padding: 10px 12px;
+  height: var(--main-icon-size);
   border-radius: var(--ui-radius);
   border: var(--ui-border) solid var(--muted-2);
   font-size: 16px;
-  min-width: 220px;
-  box-sizing: border-box;
-  height: 44px;
   background: transparent;
   color: #111;
+  padding: 0 16px;
+  box-sizing: border-box;
+  min-width: 280px; /* expanded slightly toward center */
   transition: all 0.25s ease;
 }
 
 input.word-input:focus {
   outline: none;
-  border-color: var(--accent-green);
+  border-color: var(--muted-2);
 }
 
 /* --- Universal Button Reset --- */
