@@ -312,37 +312,43 @@ button[disabled],
   align-items: center;
 }
 
-/* --- Score box (right-aligned, matches segmented/button height) --- */
+/* --- Score box (right-aligned, outlined, consistent with textbox style) --- */
 .score-box {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  height: var(--main-icon-size);           /* match main controls height */
-  min-width: 88px;                         /* reasonable minimum width */
-  padding: 0 12px;                         /* inner padding (keeps text centered) */
+  height: var(--main-icon-size);
+  min-width: 88px;
+  padding: 0 16px;
   border: var(--ui-border) solid var(--muted-2);
   border-radius: var(--ui-radius);
   background: transparent;
-  color: #222;
-  font-weight: 800;
+  color: #111;
+  font-size: 16px;
+  font-weight: 500; /* same as textbox weight */
   box-sizing: border-box;
-  justify-content: center;
 }
 
+/* make icon match outline color */
 .score-box i {
   font-size: 14px;
-  color: inherit;
+  color: var(--muted-2);
   line-height: 1;
 }
 
+/* value styling */
 #scoreValue {
   font-size: 16px;
   white-space: nowrap;
+  color: inherit;
 }
 
+/* subtle hover feedback */
 .score-box:hover {
   background: rgba(0,0,0,0.02);
 }
+
 
 /* --- Segmented Controls --- */
 .segmented {
