@@ -505,7 +505,18 @@ button[disabled],
   .btn-play i,
   .icon-btn i,
   .auto-btn i,
-  .stats-wipe-btn i { font-size: 16px; }
+  .stats-wipe-btn i {
+    font-size: 18px;
+    line-height: 1;
+    color: inherit;
+    transition: transform 0.15s ease, color 0.15s ease;
+  }
+  .btn-play:hover i,
+  .icon-btn:hover i,
+  .auto-btn:hover i,
+  .stats-wipe-btn:hover i {
+    transform: scale(1.08);
+  }
 }
 
 </style>
