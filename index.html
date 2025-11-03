@@ -1,12 +1,11 @@
-<!DOCTYPE html>
+
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Spelling Trainer — UI tweaks</title>
-
+<title>Spelling Trainer</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
-
 <style>
 :root{
   --page-bg:#eceff1;
@@ -16,10 +15,9 @@
   --accent-green:#4CAF50;
   --accent-yellow:#FFC107;
   --accent-red:#F44336;
-  --card-width:720px;
+  --card-width:760px;
   --shadow:0 10px 30px rgba(20,20,30,0.06);
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
-  --btn-radius:12px;
 }
 html,body{height:100%;margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:var(--page-bg);color:#222}
 .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:28px}
@@ -33,7 +31,7 @@ nav button.active{background:#dfe4e7;color:#111}
 /* top row */
 .play-row { display:flex; gap:10px; align-items:stretch; justify-content:center; margin-bottom:8px; }
 .btn-play { display:inline-flex; align-items:center; justify-content:center; background:var(--muted-2); color:#fff; border-radius:12px; padding:0 12px; border:none; cursor:pointer; min-width:48px; height:44px; box-sizing:border-box; }
-.btn { background:var(--muted-2); color:#fff; border:none; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:700 }
+.btn { background:var(--muted-2); color:#fff; border:none; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:700; height:44px; box-sizing:border-box; }
 .btn.small { padding:8px 10px; min-width:84px }
 .btn:disabled { opacity:0.6; cursor:not-allowed }
 
@@ -55,73 +53,28 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
 .score-area { position:relative; display:flex; align-items:center; gap:8px; min-width:110px; justify-content:flex-end }
 .score { font-weight:800; color:#222 }
 
-/* Auto Next - replaced styles (paste in place of previous .check-btn block) */
-.check-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between; /* keeps label left, box right */
-  gap: 12px;
-  padding: 0 14px;                 /* horizontal padding to match other buttons */
-  height: 44px;                    /* same height as other buttons */
-  border-radius: 12px;             /* same corner rounding */
-  border: 1px solid transparent;
-  background: var(--muted-2);      /* same base background as other buttons */
-  color: #fff;
-  cursor: pointer;
-  min-width: 140px;
-  box-sizing: border-box;
-  font-weight: 700;
-  line-height: 1;
+/* Auto Next button: when ON -> white with light grey outline; OFF -> grey like other buttons */
+.auto-btn {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:0 14px;
+  height:44px;
+  border-radius:12px;
+  border:1px solid transparent;
+  background:var(--muted-2);
+  color:#fff;
+  cursor:pointer;
+  min-width:140px;
+  box-sizing:border-box;
+  font-weight:700;
 }
-
-/* Label inherits the color so it never disappears */
-.check-btn .label { color: inherit; }
-
-/* The right-side small square box (empty state) */
-.check-btn .box {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  background: transparent;
-  border: 2px solid rgba(255,255,255,0.35);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 8px; /* space between label and box */
-  box-sizing: border-box;
-  position: relative;
+.auto-btn.checked {
+  background:#fff;
+  color:#111;
+  border:1px solid #e6e6e6;
 }
-
-/* tiny inner square that fills when checked (created via pseudo-element) */
-.check-btn .box::after{
-  content: "";
-  display: block;
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  background: transparent;
-  transition: background .18s ease, transform .18s ease;
-  transform: scale(1);
-}
-
-/* When checked: keep the button background (no white) and fill the inner square */
-.check-btn.checked {
-  background: var(--muted-2);      /* keep same look so text stays visible */
-  color: #fff;
-  border-color: transparent;
-  box-shadow: none;
-}
-
-/* fill the inner square with the green accent when checked */
-.check-btn.checked .box::after{
-  background: var(--accent-green);
-}
-
-/* keep the check icon hidden (if present) — we use the filled inner square instead */
-.check-btn .box i { display: none; }
-
-/* Optional: slightly darker border when not hovered, improve spacing */
-.check-btn:hover { filter: brightness(0.98); }
 
 /* settings segmented controls */
 .segmented { display:flex; gap:6px; background:transparent; border-radius:10px; padding:6px }
@@ -191,12 +144,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
           <div class="controls">
             <button id="btnCheck" class="btn" type="button">Check</button>
             <button id="btnNext" class="btn" type="button">Next Word</button>
-
-            <!-- New square Auto Next button (styled like other buttons) -->
-            <button id="autoNextBtn" class="check-btn" type="button" aria-pressed="false" title="Auto Next (3s)">
-              <span class="label">Auto Next</span>
-              <span class="box" aria-hidden="true"><i class="fa-solid fa-check" style="display:none"></i></span>
-            </button>
+            <button id="autoNextBtn" class="auto-btn" type="button" aria-pressed="false" title="Auto Next (3s)">Auto Next</button>
           </div>
 
           <div class="meta">
@@ -243,7 +191,6 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
               </div>
             </div>
 
-            <!-- NEW: TTS voice selector: control is flexible width to keep select in-frame -->
             <div class="settings-row">
               <div class="label">TTS Voice</div>
               <div class="control">
@@ -253,18 +200,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
               </div>
             </div>
 
-            <!-- Auto Next replicated in settings so user can toggle there as well -->
-            <div class="settings-row">
-              <div class="label">Auto Next</div>
-              <div class="control">
-                <button id="autoNextBtnSettings" class="check-btn" type="button" aria-pressed="false">
-                  <span class="label">Auto Next</span>
-                  <span class="box" aria-hidden="true"><i class="fa-solid fa-check" style="display:none"></i></span>
-                </button>
-              </div>
-            </div>
-
-            <div class="small" style="color:#666">Auto Next toggle available in-game and here. Word source removed.</div>
+            <div class="small" style="color:#666">Auto Next control moved to Game. Word source removed from settings.</div>
           </div>
         </section>
       </main>
@@ -274,33 +210,15 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
 <!-- embedded fallback words -->
 <script id="embeddedWords" type="application/json">
 {
-  "words": [
-    {"word":"abandon","level":"easy"},
-    {"word":"bravery","level":"easy"},
-    {"word":"elegant","level":"easy"},
-    {"word":"harvest","level":"easy"},
-    {"word":"journey","level":"easy"},
-    {"word":"meticulous","level":"advanced"},
-    {"word":"resilient","level":"advanced"},
-    {"word":"transcendent","level":"advanced"},
-    {"word":"alleviate","level":"advanced"},
-    {"word":"benevolent","level":"advanced"},
-    {"word":"juxtaposition","level":"proficient"},
-    {"word":"idiosyncrasy","level":"proficient"},
-    {"word":"ephemeral","level":"proficient"},
-    {"word":"conscientious","level":"proficient"},
-    {"word":"magnanimous","level":"proficient"}
+  "words":[
+    {"word":"abandon","level":"easy"},{"word":"bravery","level":"easy"},{"word":"elegant","level":"easy"},{"word":"harvest","level":"easy"},{"word":"journey","level":"easy"},
+    {"word":"meticulous","level":"advanced"},{"word":"resilient","level":"advanced"},{"word":"transcendent","level":"advanced"},{"word":"alleviate","level":"advanced"},{"word":"benevolent","level":"advanced"},
+    {"word":"juxtaposition","level":"proficient"},{"word":"idiosyncrasy","level":"proficient"},{"word":"ephemeral","level":"proficient"},{"word":"conscientious","level":"proficient"},{"word":"magnanimous","level":"proficient"}
   ]
 }
 </script>
 
 <script>
-/* This is the same app logic as before with two UI changes:
-   - TTS voice select is now flexible and stays in-frame
-   - Auto Next is a square checkbox-style button in game and settings (kept in sync)
-   Keep the rest of the app features intact (easy mode reveal, stats, scoring...).
-*/
-
 (() => {
   // DOM
   const tabGame = document.getElementById('tabGame'), tabStats = document.getElementById('tabStats'), tabSettings = document.getElementById('tabSettings');
@@ -316,7 +234,6 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   const voiceSelect = document.getElementById('voiceSelect');
 
   const autoNextBtn = document.getElementById('autoNextBtn');
-  const autoNextBtnSettings = document.getElementById('autoNextBtnSettings');
 
   // state
   let wordPool = [];
@@ -331,7 +248,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   let autoNextTimer = null;
 
   let stats = JSON.parse(localStorage.getItem('spelling_stats') || '[]');
-  const defaultSettings = { autoNext:false, difficulty:'proficient', mode:'normal', voice: '' };
+  const defaultSettings = { autoNext:false, difficulty:'proficient', mode:'normal', voice:'' };
   let settings = Object.assign({}, defaultSettings, JSON.parse(localStorage.getItem('spelling_settings') || '{}'));
 
   // colors
@@ -344,11 +261,8 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   let miniTooltip = null;
   function showMiniTooltip(x,y,text,bg,txtColor='#fff'){
     hideMiniTooltip();
-    miniTooltip = document.createElement('div');
-    miniTooltip.className = 'mini-tooltip';
-    miniTooltip.style.background = bg;
-    miniTooltip.style.color = txtColor;
-    miniTooltip.textContent = text;
+    miniTooltip = document.createElement('div'); miniTooltip.className = 'mini-tooltip';
+    miniTooltip.style.background = bg; miniTooltip.style.color = txtColor; miniTooltip.textContent = text;
     document.body.appendChild(miniTooltip);
     const r = miniTooltip.getBoundingClientRect();
     miniTooltip.style.left = (x - r.width/2) + 'px';
@@ -364,29 +278,60 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   function shuffle(a){ for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
   function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-  // Load words (same robust loader)
+  // --- Robust loader: try wordslist.json, words.json, fallback to embedded ---
   async function loadWords(){
     wordPool = [];
-    try {
-      if (location.protocol !== 'file:'){
-        const res = await fetch('wordslist.json', { cache: 'no-store' });
-        if (res.ok){
-          const j = await res.json();
-          if (Array.isArray(j.words)) wordPool = j.words.map(o => ({ word: String(o.word).toLowerCase(), level: String(o.level).toLowerCase() }));
+    async function tryFetch(name){
+      try {
+        const res = await fetch(name, { cache: 'no-store' });
+        const text = await res.text();
+        try { return JSON.parse(text); } catch(e){ console.warn(`${name} fetched but invalid JSON.`); return null; }
+      } catch(e){ return null; }
+    }
+
+    // only try network fetch when not file:// (CORS tripping). If file://, skip fetch to avoid errors.
+    if (location.protocol !== 'file:') {
+      let json = await tryFetch('wordslist.json');
+      if (!json) json = await tryFetch('words.json');
+      if (json){
+        let arr = Array.isArray(json) ? json : (Array.isArray(json.words) ? json.words : []);
+        arr = arr.map(it => {
+          if (!it) return null;
+          if (typeof it === 'string') return { word: it.toLowerCase(), level: 'easy' };
+          const w = it.word ? String(it.word).toLowerCase() : null;
+          const level = it.level ? String(it.level).toLowerCase() : 'easy';
+          if (!w) return null;
+          return { word: w, level };
+        }).filter(Boolean);
+        if (arr.length) {
+          wordPool = arr;
+          console.info('Loaded external word list:', wordPool.length, 'words');
         }
       }
-    } catch(e){
-      /* fallback */
     }
+
+    // fallback to embedded
     if (!wordPool.length){
       try {
         const embedded = JSON.parse(document.getElementById('embeddedWords').textContent);
-        wordPool = (embedded.words || []).map(o => ({ word: String(o.word).toLowerCase(), level: String(o.level).toLowerCase() }));
+        const arr = (Array.isArray(embedded) ? embedded : embedded.words) || [];
+        wordPool = arr.map(it => {
+          if (!it) return null;
+          if (typeof it === 'string') return { word: it.toLowerCase(), level: 'easy' };
+          const w = it.word ? String(it.word).toLowerCase() : null;
+          const level = it.level ? String(it.level).toLowerCase() : 'easy';
+          if (!w) return null;
+          return { word: w, level };
+        }).filter(Boolean);
+        console.info('Using embedded word list, count:', wordPool.length);
       } catch(e){
-        wordPool = [{ word:'genuine', level:'easy' }, { word:'resilient', level:'advanced' }, { word:'ubiquitous', level:'proficient' }];
+        console.warn('Embedded words parse failed; loading tiny fallback.');
+        wordPool = [{word:'genuine',level:'easy'},{word:'resilient',level:'advanced'},{word:'ubiquitous',level:'proficient'}];
       }
     }
-    ['easy','advanced','proficient'].forEach(l => {
+
+    // build per-level queues
+    ['easy','advanced','proficient'].forEach(l=>{
       const arr = wordPool.filter(w => w.level === l).slice();
       queues[l] = shuffle(arr);
     });
@@ -398,11 +343,11 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
       const refill = wordPool.filter(w => w.level === level).slice();
       queues[level] = shuffle(refill);
     }
-    const item = (queues[level] && queues[level].shift()) || wordPool.find(w => w.level === level) || wordPool[0];
+    const item = (queues[level] && queues[level].shift()) || wordPool.find(w=>w.level===level) || wordPool[0];
     return (item && item.word) ? item.word : 'genuine';
   }
 
-  // Segments
+  // segments
   function renderSegments(){
     feedbackBar.innerHTML = '';
     const segCount = (settings.mode === 'easy') ? 5 : 3;
@@ -433,7 +378,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   function similarityRatio(a,b){ if(!a&&!b) return 1; const d=levenshtein(a||'',b||''); return 1 - d/Math.max((a||'').length,(b||'').length||1); }
 
   function complexityInfo(w){ const len=(w||'').length; if (len<6) return {label:'Easy', mult:1.0}; if (len<=9) return {label:'Advanced', mult:1.25}; return {label:'Proficient', mult:1.5}; }
-  function computePoints(correctnessScore, word, seconds){ const comp = complexityInfo(word).mult; const timeBonus = Math.max(0.5, Math.min(1.5, 5/Math.max(seconds,0.2))); const raw = 10 * correctnessScore * comp * timeBonus; return Math.round(raw); }
+  function computePoints(correctnessScore, word, seconds){ const comp = complexityInfo(word).mult; const timeBonus = Math.max(0.5, Math.min(1.5, 5/Math.max(seconds,0.2))); return Math.round(10 * correctnessScore * comp * timeBonus); }
 
   function showFloating(points, type){
     comboEl.textContent = (points>0 ? `+${points} pts` : '+0 pts');
@@ -470,7 +415,6 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
     for (let i = firstRemaining; i <= endIndex; i++) segEls[i].style.background = 'transparent';
   }
 
-  // reveal hint below input for easy mode
   function updateRevealHint(){
     if (settings.mode !== 'easy' || !currentWord){ hintLine.textContent = ''; return; }
     const total = 5;
@@ -523,7 +467,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
     setTimeout(()=> inputAnswer.focus(), 700);
   }
 
-  function easyAttemptMultiplier(attemptIndex){ return ({1:1.0,2:0.8,3:0.6,4:0.4,5:0.2})[attemptIndex] || 0; }
+  function easyAttemptMultiplier(idx){ return ({1:1.0,2:0.8,3:0.6,4:0.4,5:0.2})[idx] || 0; }
 
   function onCheck(){
     if (!currentWord) return;
@@ -539,9 +483,9 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
 
     const exact = raw === currentWord;
     const sim = similarityRatio(raw, currentWord);
-    let correctness = 0, outcome = 'wrong';
-    if (exact){ correctness = 1.0; outcome = 'correct'; }
-    else if (sim >= 0.75){ correctness = 0.6; outcome = 'almost'; }
+    let outcome = 'wrong', correctness = 0;
+    if (exact){ outcome = 'correct'; correctness = 1.0; }
+    else if (sim >= 0.75){ outcome = 'almost'; correctness = 0.6; }
 
     attemptsThisRound.push({ value: raw, outcome });
 
@@ -568,14 +512,8 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
       }
       totalScore += pts; updateScore(); showFloating(pts, 'green');
     } else if (outcome === 'almost'){
-      let correctnessScore = 0.6;
-      if (settings.mode === 'easy'){
-        const attemptNo = attemptsThisRound.length;
-        const mult = easyAttemptMultiplier(attemptNo);
-        pts = Math.round(computePoints(correctnessScore, currentWord, secs) * mult);
-      } else {
-        pts = computePoints(correctnessScore, currentWord, secs);
-      }
+      if (settings.mode === 'easy'){ pts = Math.round(computePoints(0.6, currentWord, secs) * easyAttemptMultiplier(attemptsThisRound.length)); }
+      else { pts = computePoints(0.6, currentWord, secs); }
       totalScore += pts; updateScore(); showFloating(pts, 'yellow');
     } else {
       showFloating(0, 'red');
@@ -666,36 +604,21 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   function renderSettings(){
     Array.from(segDifficulty.querySelectorAll('button')).forEach(b => b.classList.toggle('on', b.dataset.val === settings.difficulty));
     Array.from(segMode.querySelectorAll('button')).forEach(b => b.classList.toggle('on', b.dataset.val === settings.mode));
-    // autoNext visuals
-    syncAutoNextVisuals();
-    // voice selection restore
-    if (settings.voice){
-      const opt = Array.from(voiceSelect.options).find(o => o.value === settings.voice);
-      if (opt) voiceSelect.value = settings.voice;
-    }
+    // voice select restore handled elsewhere
   }
   segDifficulty.addEventListener('click',(e)=>{ if (e.target.tagName!=='BUTTON') return; settings.difficulty = e.target.dataset.val; persistSettings(); renderSettings(); startNewRound(false); });
   segMode.addEventListener('click',(e)=>{ if (e.target.tagName!=='BUTTON') return; settings.mode = e.target.dataset.val; persistSettings(); renderSettings(); renderSegments(); startNewRound(false); });
 
-  // Auto Next logic (set and sync UI)
+  // Auto next toggle (single game control only)
   function setAutoNext(enabled){
     settings.autoNext = !!enabled;
     persistSettings();
-    syncAutoNextVisuals();
+    if (autoNextBtn) {
+      if (settings.autoNext) { autoNextBtn.classList.add('checked'); autoNextBtn.setAttribute('aria-pressed','true'); }
+      else { autoNextBtn.classList.remove('checked'); autoNextBtn.setAttribute('aria-pressed','false'); }
+    }
   }
-  function syncAutoNextVisuals(){
-    const on = !!settings.autoNext;
-    [autoNextBtn, autoNextBtnSettings].forEach(btn=>{
-      if (!btn) return;
-      if (on) btn.classList.add('checked'); else btn.classList.remove('checked');
-      btn.setAttribute('aria-pressed', String(on));
-      // show/hide check icon inside small box
-      const icon = btn.querySelector('.box i');
-      if (icon) icon.style.display = on ? '' : 'none';
-    });
-  }
-  autoNextBtn.addEventListener('click', ()=> setAutoNext(!settings.autoNext));
-  autoNextBtnSettings.addEventListener('click', ()=> setAutoNext(!settings.autoNext));
+  if (autoNextBtn) autoNextBtn.addEventListener('click', ()=> setAutoNext(!settings.autoNext));
 
   // TTS voice population
   function populateVoices(){
@@ -711,29 +634,17 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
       opt.textContent = `${v.name}${v.lang ? ' — '+v.lang : ''}${v.default ? ' (default)' : ''}`;
       voiceSelect.appendChild(opt);
     });
-    // restore stored voice if present
     if (settings.voice) {
       const match = Array.from(voiceSelect.options).find(o => o.value === settings.voice);
       if (match) voiceSelect.value = settings.voice;
     }
   }
   speechSynthesis.addEventListener('voiceschanged', populateVoices);
-  voiceSelect.addEventListener('change', ()=>{
-    settings.voice = voiceSelect.value || '';
-    persistSettings();
-  });
+  voiceSelect.addEventListener('change', ()=> { settings.voice = voiceSelect.value || ''; persistSettings(); });
 
-  // Load/init
-  async function init(){
-    await loadWords();
-    renderSegments();
-    renderSettings();
-    renderStats();
-    updateScore();
-    populateVoices();
-    setTimeout(populateVoices, 600);
-    startNewRound(false);
-  }
+  // Utility UI helpers
+  function showResult(text,color='#444'){ resultText.textContent = text; resultText.style.color = color; }
+  function updateScore(){ scoreText.textContent = `Score: ${totalScore}`; }
 
   // Event bindings
   btnPlay.addEventListener('click', ()=>{ if (currentWord) speak(currentWord); });
@@ -746,19 +657,26 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   tabStats.addEventListener('click', ()=>{ pageStats.style.display=''; pageGame.style.display='none'; pageSettings.style.display='none'; tabStats.classList.add('active'); tabGame.classList.remove('active'); tabSettings.classList.remove('active'); renderStats(); });
   tabSettings.addEventListener('click', ()=>{ pageSettings.style.display=''; pageGame.style.display='none'; pageStats.style.display='none'; tabSettings.classList.add('active'); tabGame.classList.remove('active'); tabStats.classList.remove('active'); renderSettings(); });
 
-  function updateScore(){ scoreText.textContent = `Score: ${totalScore}`; }
-
-  // start
-  init();
+  // Init
+  (async function init(){
+    await loadWords();
+    renderSegments();
+    renderSettings();
+    renderStats();
+    updateScore();
+    populateVoices();
+    setTimeout(populateVoices,600);
+    setAutoNext(!!settings.autoNext);
+    startNewRound(false);
+  })();
 
   // persist
   window.addEventListener('beforeunload', ()=>{ persistSettings(); persistStats(); });
 
   // tooltip removal on outside click
-  document.addEventListener('click', (e)=>{ if (miniTooltip && !miniTooltip.contains(e.target)) hideMiniTooltip(); });
+  document.addEventListener('click',(e)=>{ if (miniTooltip && !miniTooltip.contains(e.target)) hideMiniTooltip(); });
 
 })();
 </script>
 </body>
 </html>
-
