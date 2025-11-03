@@ -294,14 +294,16 @@ button[disabled],
   text-align: center;
 }
 
-/* the hintLine below is repurposed to contain the definition after the round ends */
+/* the hintLine below is repurposed to contain the definition after the round ends
+   Updated to match app font, left-aligned and italic per request */
 .hint-line {
   margin-top: 8px;
-  font-family: var(--mono);
+  font-family: inherit;
   color: #666;
-  text-align: center;
+  text-align: left;
   min-height: 28px;
   transition: opacity 0.25s ease;
+  font-style: italic;
 }
 
 /* --- Feedback Bars --- */
@@ -698,6 +700,10 @@ button[disabled],
   let totalScore = 0;
   let autoNextTimer = null;
 
+  // definitions cache (persisted)
+  let definitionsCache = {};
+  try { definitionsCache = JSON.parse(localStorage.getItem('definition_cache') || '{}'); } catch(e){ definitionsCache = {}; }
+
   // replay tracking for hardcore mode
   let replayCount = 0;
   const HARDCORE_MAX_REPLAYS = 3;
@@ -732,6 +738,7 @@ button[disabled],
 
   function persistSettings(){ localStorage.setItem('spelling_settings', JSON.stringify(settings)); }
   function persistStats(){ localStorage.setItem('spelling_stats', JSON.stringify(stats)); }
+  function persistDefinitionsCache(){ try{ localStorage.setItem('definition_cache', JSON.stringify(definitionsCache)); } catch(e){ /* ignore storage errors */ } }
 
   function capitalize(s){ return (!s)?s:s[0].toUpperCase()+s.slice(1); }
   function shuffle(a){ for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
@@ -1050,6 +1057,20 @@ async function startNewRound(manual=false){
     inputAnswer.placeholder = 'Type what you hear...';
   }
 
+  // prefetch definition as soon as the word is loaded (cached to reduce repeated calls)
+  (async ()=>{
+    try {
+      if (!definitionsCache[currentWord]) {
+        const variantsToTry = (window.variantsMap && window.variantsMap[currentWord]) || [currentWord];
+        const def = await fetchDefinitionForVariants(variantsToTry);
+        definitionsCache[currentWord] = def || null;
+        persistDefinitionsCache();
+      }
+    } catch(e){
+      console.warn('prefetch definition failed', e);
+    }
+  })();
+
   // automatic initial spoken audio (do not count towards hardcore replay limit)
   setTimeout(()=>{ 
     const u = new SpeechSynthesisUtterance(currentWord);
@@ -1149,12 +1170,21 @@ async function onCheck(){
     stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: pts, correct:true, incomplete:false, mode: settings.mode });
     persistStats();
 
-    // fetch and show definition under input
-    hintLine.textContent = 'Looking up definition…';
-    const variantsToTry = (window.variantsMap && window.variantsMap[currentWord]) || [currentWord];
-    const def = await fetchDefinitionForVariants(variantsToTry);
-    if (def) hintLine.innerHTML = `<strong>Definition:</strong> ${escapeHtml(def)}`;
-    else hintLine.innerHTML = `<strong>Definition:</strong> Definition unavailable`;
+    // show definition under input using cached value if available (prefetch done at round start)
+    const cached = definitionsCache[currentWord];
+    if (cached !== undefined) {
+      if (cached) hintLine.innerHTML = `<strong>Definition:</strong> ${escapeHtml(cached)}`;
+      else hintLine.innerHTML = `<strong>Definition:</strong> Definition unavailable`;
+    } else {
+      // fallback: try fetch now (should be rare)
+      hintLine.textContent = 'Looking up definition…';
+      const variantsToTry = (window.variantsMap && window.variantsMap[currentWord]) || [currentWord];
+      const def = await fetchDefinitionForVariants(variantsToTry);
+      definitionsCache[currentWord] = def || null;
+      persistDefinitionsCache();
+      if (def) hintLine.innerHTML = `<strong>Definition:</strong> ${escapeHtml(def)}`;
+      else hintLine.innerHTML = `<strong>Definition:</strong> Definition unavailable`;
+    }
 
     if (settings.autoNext){
       if (autoNextTimer) clearTimeout(autoNextTimer);
@@ -1179,12 +1209,20 @@ async function onCheck(){
       stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: 0, correct:false, incomplete:false, mode: settings.mode });
       persistStats();
 
-      // fetch and show definition under input (on failure too)
-      hintLine.textContent = 'Looking up definition…';
-      const variantsToTry = (window.variantsMap && window.variantsMap[currentWord]) || [currentWord];
-      const def = await fetchDefinitionForVariants(variantsToTry);
-      if (def) hintLine.innerHTML = `<strong>Definition:</strong> ${escapeHtml(def)}`;
-      else hintLine.innerHTML = `<strong>Definition:</strong> Definition unavailable`;
+      // show definition (use cached prefetched value)
+      const cached = definitionsCache[currentWord];
+      if (cached !== undefined) {
+        if (cached) hintLine.innerHTML = `<strong>Definition:</strong> ${escapeHtml(cached)}`;
+        else hintLine.innerHTML = `<strong>Definition:</strong> Definition unavailable`;
+      } else {
+        hintLine.textContent = 'Looking up definition…';
+        const variantsToTry = (window.variantsMap && window.variantsMap[currentWord]) || [currentWord];
+        const def = await fetchDefinitionForVariants(variantsToTry);
+        definitionsCache[currentWord] = def || null;
+        persistDefinitionsCache();
+        if (def) hintLine.innerHTML = `<strong>Definition:</strong> ${escapeHtml(def)}`;
+        else hintLine.innerHTML = `<strong>Definition:</strong> Definition unavailable`;
+      }
 
       if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer = setTimeout(()=>{ startNewRound(false); autoNextTimer = null; }, 3000); }
     } else {
@@ -1403,7 +1441,7 @@ function updateScore(){
   })();
 
   // persist
-  window.addEventListener('beforeunload', ()=>{ persistSettings(); persistStats(); });
+  window.addEventListener('beforeunload', ()=>{ persistSettings(); persistStats(); persistDefinitionsCache(); });
 
   // global click to close tooltip
   document.addEventListener('click',(e)=>{ if (miniTooltip && !miniTooltip.contains(e.target)) hideMiniTooltip(); });
