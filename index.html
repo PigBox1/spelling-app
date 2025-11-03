@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Spelling Trainer — TTS Voice + Styled Auto-Next</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Spelling Trainer — UI tweaks</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
@@ -55,12 +55,34 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
 .score-area { position:relative; display:flex; align-items:center; gap:8px; min-width:110px; justify-content:flex-end }
 .score { font-weight:800; color:#222 }
 
-/* styled toggle (auto-next) */
-.toggle { display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
-.toggle .pill { width:54px; height:28px; background:#e6e9ea; border-radius:999px; padding:4px; display:flex; align-items:center; transition:background .18s ease; }
-.toggle .knob { width:20px; height:20px; background:#fff; border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,0.12); transform:translateX(0); transition:transform .18s cubic-bezier(.2,.9,.2,1); }
-.toggle.on .pill { background:var(--accent-green); }
-.toggle.on .knob { transform:translateX(26px); }
+/* checkbox-style square auto-next control */
+.check-btn {
+  display:inline-flex;
+  align-items:center;
+  gap:12px;
+  padding:8px 12px;
+  border-radius:12px;
+  border:1px solid transparent;
+  background:var(--muted-2);
+  cursor:pointer;
+  min-height:44px;
+  box-sizing:border-box;
+  color:#fff;
+  font-weight:700;
+}
+.check-btn .label { color:#fff; font-weight:700; }
+.check-btn .box {
+  width:22px; height:22px;
+  border-radius:6px;
+  background:transparent;
+  border:2px solid rgba(255,255,255,0.35);
+  display:flex; align-items:center; justify-content:center;
+}
+.check-btn.checked {
+  background:#ffffff; color:#111; border:1px solid rgba(0,0,0,0.06);
+}
+.check-btn.checked .box { background:var(--accent-green); border-color:transparent; }
+.check-btn.checked .box i { color:#fff; font-size:12px; }
 
 /* settings segmented controls */
 .segmented { display:flex; gap:6px; background:transparent; border-radius:10px; padding:6px }
@@ -69,8 +91,11 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
 
 /* settings rows */
 .settings-row { display:flex; gap:12px; align-items:center; margin:8px 0; }
-.label { min-width:100px; font-size:14px; color:#666 }
-.select { padding:8px 10px; border-radius:10px; border:1px solid #e6e6e6; background:#fff; font-size:14px; }
+.label { min-width:110px; font-size:14px; color:#666 }
+.control { flex:1; display:flex; align-items:center; gap:8px }
+
+/* select */
+.select { padding:10px 12px; border-radius:10px; border:1px solid #e6e6e6; background:#fff; font-size:14px; width:100%; box-sizing:border-box; }
 
 /* stats */
 .stats-list { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
@@ -128,11 +153,11 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
             <button id="btnCheck" class="btn" type="button">Check</button>
             <button id="btnNext" class="btn" type="button">Next Word</button>
 
-            <!-- Styled auto-next toggle in game controls (keeps look consistent) -->
-            <div id="autoNextToggle" class="toggle" title="Auto Next (3s)">
-              <div class="label" style="font-size:13px;color:#444">Auto Next</div>
-              <div class="pill"><div class="knob"></div></div>
-            </div>
+            <!-- New square Auto Next button (styled like other buttons) -->
+            <button id="autoNextBtn" class="check-btn" type="button" aria-pressed="false" title="Auto Next (3s)">
+              <span class="label">Auto Next</span>
+              <span class="box" aria-hidden="true"><i class="fa-solid fa-check" style="display:none"></i></span>
+            </button>
           </div>
 
           <div class="meta">
@@ -160,27 +185,44 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
           <div style="display:flex;flex-direction:column;gap:12px">
             <div class="settings-row">
               <div class="label">Difficulty</div>
-              <div class="segmented" id="segDifficulty">
-                <button data-val="easy" type="button">Easy</button>
-                <button data-val="advanced" type="button">Advanced</button>
-                <button data-val="proficient" type="button">Proficient</button>
+              <div class="control">
+                <div class="segmented" id="segDifficulty">
+                  <button data-val="easy" type="button">Easy</button>
+                  <button data-val="advanced" type="button">Advanced</button>
+                  <button data-val="proficient" type="button">Proficient</button>
+                </div>
               </div>
             </div>
 
             <div class="settings-row">
               <div class="label">Mode</div>
-              <div class="segmented" id="segMode">
-                <button data-val="normal" type="button">Normal</button>
-                <button data-val="easy" type="button">Easy (hints, 5 attempts)</button>
+              <div class="control">
+                <div class="segmented" id="segMode">
+                  <button data-val="normal" type="button">Normal</button>
+                  <button data-val="easy" type="button">Easy (hints, 5 attempts)</button>
+                </div>
               </div>
             </div>
 
-            <!-- NEW: TTS voice selector -->
+            <!-- NEW: TTS voice selector: control is flexible width to keep select in-frame -->
             <div class="settings-row">
               <div class="label">TTS Voice</div>
-              <select id="voiceSelect" class="select" aria-label="Select TTS voice">
-                <option value="">Loading voices…</option>
-              </select>
+              <div class="control">
+                <select id="voiceSelect" class="select" aria-label="Select TTS voice">
+                  <option value="">Loading voices…</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Auto Next replicated in settings so user can toggle there as well -->
+            <div class="settings-row">
+              <div class="label">Auto Next</div>
+              <div class="control">
+                <button id="autoNextBtnSettings" class="check-btn" type="button" aria-pressed="false">
+                  <span class="label">Auto Next</span>
+                  <span class="box" aria-hidden="true"><i class="fa-solid fa-check" style="display:none"></i></span>
+                </button>
+              </div>
             </div>
 
             <div class="small" style="color:#666">Auto Next toggle available in-game and here. Word source removed.</div>
@@ -214,11 +256,10 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
 </script>
 
 <script>
-/* Full app (based on previous working file) with:
-   - TTS voice dropdown in Settings (populates from speechSynthesis)
-   - styled auto-next toggle (game + settings sync)
-   - "word source" removed
-   - voice choice persists in settings
+/* This is the same app logic as before with two UI changes:
+   - TTS voice select is now flexible and stays in-frame
+   - Auto Next is a square checkbox-style button in game and settings (kept in sync)
+   Keep the rest of the app features intact (easy mode reveal, stats, scoring...).
 */
 
 (() => {
@@ -235,9 +276,10 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   const segDifficulty = document.getElementById('segDifficulty'), segMode = document.getElementById('segMode');
   const voiceSelect = document.getElementById('voiceSelect');
 
-  const autoNextToggle = document.getElementById('autoNextToggle');
+  const autoNextBtn = document.getElementById('autoNextBtn');
+  const autoNextBtnSettings = document.getElementById('autoNextBtnSettings');
 
-  // app state
+  // state
   let wordPool = [];
   let queues = { easy:[], advanced:[], proficient:[] };
   let currentWord = null;
@@ -259,7 +301,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   const COLOR_YELLOW = getComputedStyle(document.documentElement).getPropertyValue('--accent-yellow').trim() || '#FFC107';
   const COLOR_RED = getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim() || '#F44336';
 
-  // small tooltip element
+  // tooltip
   let miniTooltip = null;
   function showMiniTooltip(x,y,text,bg,txtColor='#fff'){
     hideMiniTooltip();
@@ -283,7 +325,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   function shuffle(a){ for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
   function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-  // --- Load words (same robust loader as before) ---
+  // Load words (same robust loader)
   async function loadWords(){
     wordPool = [];
     try {
@@ -295,7 +337,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
         }
       }
     } catch(e){
-      // fallback
+      /* fallback */
     }
     if (!wordPool.length){
       try {
@@ -317,11 +359,11 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
       const refill = wordPool.filter(w => w.level === level).slice();
       queues[level] = shuffle(refill);
     }
-    const item = (queues[level] && queues[level].shift()) || (wordPool.find(w=>w.level===level)) || wordPool[0];
+    const item = (queues[level] && queues[level].shift()) || wordPool.find(w => w.level === level) || wordPool[0];
     return (item && item.word) ? item.word : 'genuine';
   }
 
-  // --- segments ---
+  // Segments
   function renderSegments(){
     feedbackBar.innerHTML = '';
     const segCount = (settings.mode === 'easy') ? 5 : 3;
@@ -351,11 +393,9 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   }
   function similarityRatio(a,b){ if(!a&&!b) return 1; const d=levenshtein(a||'',b||''); return 1 - d/Math.max((a||'').length,(b||'').length||1); }
 
-  // complexity & scoring
   function complexityInfo(w){ const len=(w||'').length; if (len<6) return {label:'Easy', mult:1.0}; if (len<=9) return {label:'Advanced', mult:1.25}; return {label:'Proficient', mult:1.5}; }
   function computePoints(correctnessScore, word, seconds){ const comp = complexityInfo(word).mult; const timeBonus = Math.max(0.5, Math.min(1.5, 5/Math.max(seconds,0.2))); const raw = 10 * correctnessScore * comp * timeBonus; return Math.round(raw); }
 
-  // floating combo
   function showFloating(points, type){
     comboEl.textContent = (points>0 ? `+${points} pts` : '+0 pts');
     comboEl.style.background = (type==='green'?COLOR_GREEN : type==='yellow'?COLOR_YELLOW : COLOR_RED);
@@ -367,7 +407,6 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   function speak(word){
     if (!word) return;
     const u = new SpeechSynthesisUtterance(word);
-    // set voice if selected
     if (settings.voice){
       const v = speechSynthesis.getVoices().find(x => x.name === settings.voice);
       if (v) u.voice = v;
@@ -377,7 +416,6 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
     speechSynthesis.speak(u);
   }
 
-  // merge overlay
   function mergeRemainingIntoGreen(usedCount){
     if (!segEls.length) return;
     const barRect = feedbackBar.getBoundingClientRect();
@@ -409,21 +447,15 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
     }
   }
 
-  // start new round
   async function startNewRound(manual=false){
     if (manual && autoNextTimer){ clearTimeout(autoNextTimer); autoNextTimer = null; }
 
-    // record incomplete if needed
     if (!roundEnded && attemptsThisRound.length > 0){
       let best = 0; attemptsThisRound.forEach(a => { if (a.outcome === 'correct') best = Math.max(best, 1.0); else if (a.outcome === 'almost') best = Math.max(best, 0.6); });
       const used = attemptsThisRound.length;
       let multiplier = 0;
-      if (settings.mode === 'easy'){
-        const map = {1:0.5,2:0.3,3:0.2,4:0.1};
-        multiplier = map[used] || 0;
-      } else {
-        multiplier = (used === 1 ? 0.3 : (used === 2 ? 0.1 : 0));
-      }
+      if (settings.mode === 'easy'){ const map = {1:0.5,2:0.3,3:0.2,4:0.1}; multiplier = map[used] || 0; }
+      else { multiplier = (used === 1 ? 0.3 : (used === 2 ? 0.1 : 0)); }
       const secs = Math.max(0.01, (performance.now() - roundStart) / 1000);
       const basePts = computePoints(best, currentWord, secs);
       const awarded = Math.round(basePts * multiplier);
@@ -543,18 +575,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
     }
   }
 
-  // pick word
-  function pickWordForDifficulty(level){
-    level = (level || 'proficient').toLowerCase();
-    if (!queues[level] || !queues[level].length){
-      const refill = wordPool.filter(w => w.level === level).slice();
-      queues[level] = shuffle(refill);
-    }
-    const item = (queues[level] && queues[level].shift()) || wordPool.find(w => w.level === level) || wordPool[0];
-    return (item && item.word) ? item.word : 'genuine';
-  }
-
-  // ---------- Stats rendering ----------
+  // Stats rendering
   function renderStats(){
     statsList.innerHTML = '';
     const total = stats.length;
@@ -602,34 +623,47 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
 
   btnClearStats.addEventListener('click', ()=>{ if (!confirm('Clear statistics?')) return; stats = []; persistStats(); renderStats(); });
 
-  // ---------- Settings UI ----------
+  // Settings UI
   function renderSettings(){
     Array.from(segDifficulty.querySelectorAll('button')).forEach(b => b.classList.toggle('on', b.dataset.val === settings.difficulty));
     Array.from(segMode.querySelectorAll('button')).forEach(b => b.classList.toggle('on', b.dataset.val === settings.mode));
-    // update autoNextToggle visual
-    if (settings.autoNext) autoNextToggle.classList.add('on'); else autoNextToggle.classList.remove('on');
-    // set voiceSelect to stored value if present
-    if (settings.voice && voiceSelect.querySelector(`option[value="${CSS.escape(settings.voice)}"]`)) {
-      voiceSelect.value = settings.voice;
+    // autoNext visuals
+    syncAutoNextVisuals();
+    // voice selection restore
+    if (settings.voice){
+      const opt = Array.from(voiceSelect.options).find(o => o.value === settings.voice);
+      if (opt) voiceSelect.value = settings.voice;
     }
   }
   segDifficulty.addEventListener('click',(e)=>{ if (e.target.tagName!=='BUTTON') return; settings.difficulty = e.target.dataset.val; persistSettings(); renderSettings(); startNewRound(false); });
   segMode.addEventListener('click',(e)=>{ if (e.target.tagName!=='BUTTON') return; settings.mode = e.target.dataset.val; persistSettings(); renderSettings(); renderSegments(); startNewRound(false); });
 
-  // --- Auto Next toggle (both in-game pill and clickable in settings will keep in sync) ---
+  // Auto Next logic (set and sync UI)
   function setAutoNext(enabled){
     settings.autoNext = !!enabled;
     persistSettings();
-    if (settings.autoNext) autoNextToggle.classList.add('on'); else autoNextToggle.classList.remove('on');
+    syncAutoNextVisuals();
   }
-  autoNextToggle.addEventListener('click', ()=>{ setAutoNext(!settings.autoNext); });
+  function syncAutoNextVisuals(){
+    const on = !!settings.autoNext;
+    [autoNextBtn, autoNextBtnSettings].forEach(btn=>{
+      if (!btn) return;
+      if (on) btn.classList.add('checked'); else btn.classList.remove('checked');
+      btn.setAttribute('aria-pressed', String(on));
+      // show/hide check icon inside small box
+      const icon = btn.querySelector('.box i');
+      if (icon) icon.style.display = on ? '' : 'none';
+    });
+  }
+  autoNextBtn.addEventListener('click', ()=> setAutoNext(!settings.autoNext));
+  autoNextBtnSettings.addEventListener('click', ()=> setAutoNext(!settings.autoNext));
 
   // TTS voice population
   function populateVoices(){
     const voices = speechSynthesis.getVoices();
     voiceSelect.innerHTML = '';
     if (!voices || !voices.length){
-      const opt = document.createElement('option'); opt.value=''; opt.textContent='No voices available'; voiceSelect.appendChild(opt); return;
+      const opt = document.createElement('option'); opt.value=''; opt.textContent='(Default browser voice)'; voiceSelect.appendChild(opt); return;
     }
     const fallbackOpt = document.createElement('option'); fallbackOpt.value=''; fallbackOpt.textContent='(Default browser voice)'; voiceSelect.appendChild(fallbackOpt);
     voices.forEach(v=>{
@@ -644,15 +678,13 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
       if (match) voiceSelect.value = settings.voice;
     }
   }
-  // listen for voice changes
   speechSynthesis.addEventListener('voiceschanged', populateVoices);
-
   voiceSelect.addEventListener('change', ()=>{
     settings.voice = voiceSelect.value || '';
     persistSettings();
   });
 
-  // --- Load / init ---
+  // Load/init
   async function init(){
     await loadWords();
     renderSegments();
@@ -660,32 +692,30 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
     renderStats();
     updateScore();
     populateVoices();
-    // some browsers populate voices only after a short delay; guard by calling populate once more
     setTimeout(populateVoices, 600);
     startNewRound(false);
   }
 
-  // --- Event bindings ---
+  // Event bindings
   btnPlay.addEventListener('click', ()=>{ if (currentWord) speak(currentWord); });
-  btnNext.addEventListener('click', ()=>{ if (autoNextTimer) { clearTimeout(autoNextTimer); autoNextTimer = null; } startNewRound(true); });
+  btnNext.addEventListener('click', ()=>{ if (autoNextTimer){ clearTimeout(autoNextTimer); autoNextTimer = null; } startNewRound(true); });
   btnCheck.addEventListener('click', onCheck);
   inputAnswer.addEventListener('keydown', (e)=>{ if (e.key === 'Enter'){ e.preventDefault(); onCheck(); } });
 
-  // --- Tabs ---
+  // Tabs
   tabGame.addEventListener('click', ()=>{ pageGame.style.display=''; pageStats.style.display='none'; pageSettings.style.display='none'; tabGame.classList.add('active'); tabStats.classList.remove('active'); tabSettings.classList.remove('active'); });
   tabStats.addEventListener('click', ()=>{ pageStats.style.display=''; pageGame.style.display='none'; pageSettings.style.display='none'; tabStats.classList.add('active'); tabGame.classList.remove('active'); tabSettings.classList.remove('active'); renderStats(); });
   tabSettings.addEventListener('click', ()=>{ pageSettings.style.display=''; pageGame.style.display='none'; pageStats.style.display='none'; tabSettings.classList.add('active'); tabGame.classList.remove('active'); tabStats.classList.remove('active'); renderSettings(); });
 
-  // --- Helper: update score display ---
   function updateScore(){ scoreText.textContent = `Score: ${totalScore}`; }
 
-  // run init
+  // start
   init();
 
-  // persist on unload
+  // persist
   window.addEventListener('beforeunload', ()=>{ persistSettings(); persistStats(); });
 
-  // small mini-tooltip removal on outside click
+  // tooltip removal on outside click
   document.addEventListener('click', (e)=>{ if (miniTooltip && !miniTooltip.contains(e.target)) hideMiniTooltip(); });
 
 })();
