@@ -19,7 +19,7 @@
   --mono:ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
 
   /* unified metrics */
-  --ui-radius:12px;
+  --ui-radius:8px;
   --ui-border:2px;
   --main-icon-size:48px;
   --gap:12px; /* used to keep spacing consistent */
@@ -165,6 +165,73 @@ input.word-input:focus{outline:none;border-color:var(--muted-2)}
   .play-row,.controls{gap:10px}
   nav button{padding:6px 10px}
   .select{padding-right:36px}
+
+/* --- Settings Tooltips & Hover Accents --- */
+
+/* shared tooltip base */
+[data-hover]:hover::after {
+  content: attr(data-hover);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  animation: tooltipFade 0.25s ease forwards;
+  z-index: 20;
+}
+
+/* smooth fade animation for tooltips */
+@keyframes tooltipFade {
+  from { opacity: 0; transform: translate(-50%, 4px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ensure segmented buttons have proper position for tooltips */
+.segmented button {
+  position: relative;
+  overflow: visible;
+}
+
+/* difficulty hover accents */
+.segmented button[data-val="easy"]:hover {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+
+.segmented button[data-val="advanced"]:hover {
+  border-color: var(--accent-yellow);
+  color: var(--accent-yellow);
+}
+
+.segmented button[data-val="proficient"]:hover {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+/* game mode hover accents */
+#segMode button[data-val="easy"]:hover {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+
+#segMode button[data-val="normal"]:hover {
+  border-color: var(--accent-yellow);
+  color: var(--accent-yellow);
+}
+
+#segMode button[data-val="hardcore"]:hover {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+  
 }
 </style>
 </head>
