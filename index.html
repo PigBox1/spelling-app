@@ -195,7 +195,7 @@ button[disabled],
   background: transparent;
 }
 
-/* outline-only toggle look */
+/* Outline-only toggle look */
 .segmented button.on {
   background: transparent;
   border-color: var(--accent-green);
@@ -282,13 +282,29 @@ button[disabled],
   box-shadow: none !important;
 }
 
-/* --- Play Row --- */
+/* --- Play Row (textbox + play button) --- */
 .play-row {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 12px;
   margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* --- Controls Row (check, next, auto-next, score) --- */
+div:has(.icon-btn):has(.score-box) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  width: 100%;
+  flex-wrap: nowrap;
+  box-sizing: border-box;
+}
+
+.score-box {
+  margin-left: auto;
 }
 
 /* --- Feedback Bars --- */
