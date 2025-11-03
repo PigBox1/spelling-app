@@ -180,6 +180,18 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   .auto-btn i { font-size: 16px; }
 }
 
+/* make stats wipe icon visually consistent with main icon buttons */
+.stats-wipe-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+.stats-wipe-btn i { font-size: 16px; line-height: 1; }
   
 </style>
 </head>
@@ -230,7 +242,9 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div class="small" id="statsSummary">Total: 0 | Accuracy: 0%</div>
             <div>
-              <button id="btnClearStats" class="btn small" style="background:#f2f2f2;color:#333" type="button">Wipe</button>
+              <button id="btnClearStats" class="btn small stats-wipe-btn" style="background:#f2f2f2;color:#333" type="button" title="Wipe statistics" aria-label="Wipe statistics">
+                <i class="fa-solid fa-trash" aria-hidden="true"></i>
+              </button>
             </div>
           </div>
           <div class="stats-list" id="statsList"></div>
