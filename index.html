@@ -227,7 +227,6 @@ button[disabled],
   border: var(--ui-border) solid var(--muted-2);
   border-radius: var(--ui-radius);
   background: transparent;
-  color: var(--muted-2);
   cursor: pointer;
   transition: all 0.25s ease;
 }
@@ -243,7 +242,6 @@ button[disabled],
   transform: scale(1.08);
   transition: color 0.15s ease, transform 0.15s ease;
 }
-
 
 /* --- Hint / Result --- */
 .result {
@@ -323,11 +321,12 @@ button[disabled],
 /* --- Segmented Controls --- */
 .segmented {
   display: flex;
-  gap: 6px;
-  background: transparent;
-  border-radius: var(--ui-radius);
-  padding: 6px;
   justify-content: space-between;
+  gap: 12px;                /* same spacing as play row */
+  border-radius: var(--ui-radius);
+  padding: 6px 0;
+  background: transparent;
+  margin-bottom: 20px;      /* aligns visually with play-row’s offset */
 }
 
 .segmented button {
@@ -455,7 +454,13 @@ button[disabled],
   color: #666;
 }
 
-.play-row { gap: 12px; }
+.play-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;                /* spacing between items */
+  margin-bottom: 20px;      /* same bottom spacing as segmented group */
+}
 
 /* --- Responsive --- */
 @media (max-width: 760px) {
