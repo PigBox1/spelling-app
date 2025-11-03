@@ -177,44 +177,45 @@ button[disabled],
 .segmented button.on {
   border-color: var(--accent-green);
   color: var(--accent-green);
-  background: rgba(76,175,80,0.08);
+  background: transparent;
 }
 
-/* Difficulty color coding */
+/* Difficulty colors — outline only */
 .segmented button[data-val="easy"].on {
   border-color: var(--accent-green);
   color: var(--accent-green);
-  background: rgba(76,175,80,0.08);
+  background: transparent;
 }
+
 .segmented button[data-val="advanced"].on {
   border-color: var(--accent-yellow);
   color: var(--accent-yellow);
-  background: rgba(255,193,7,0.08);
+  background: transparent;
 }
+
 .segmented button[data-val="proficient"].on {
   border-color: var(--accent-red);
   color: var(--accent-red);
-  background: rgba(244,67,54,0.08);
+  background: transparent;
 }
 
-/* Mode color coding */
-/* --- Mode color coding --- */
-.segmented button[data-val="easy"].on {
+/* Mode colors — outline only */
+.segmented button[data-val="easy"].on[data-group="mode"] {
   border-color: var(--accent-green);
   color: var(--accent-green);
-  background: rgba(76,175,80,0.08);
+  background: transparent;
 }
 
 .segmented button[data-val="normal"].on {
   border-color: var(--accent-yellow);
   color: var(--accent-yellow);
-  background: rgba(255,193,7,0.08);
+  background: transparent;
 }
 
 .segmented button[data-val="hardcore"].on {
   border-color: var(--accent-red);
   color: var(--accent-red);
-  background: rgba(244,67,54,0.08);
+  background: transparent;
 }
 
 /* Auto Next toggle */
