@@ -291,7 +291,8 @@ button[disabled],
   font-weight: 700;
   color: #444;
   flex: 1;
-  text-align: center;
+  max-width: 100px;
+  text-align: right;
 }
 
 /* the hintLine below is repurposed to contain the definition after the round ends
@@ -541,9 +542,21 @@ button[disabled],
 .play-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;                /* spacing between items */
-  margin-bottom: 20px;      /* same bottom spacing as segmented group */
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.play-row .btn-play {
+  flex: 0 0 var(--main-icon-size); /* fixed width */
+}
+
+.play-row input.word-input {
+  flex: 1;                        /* expand to fill remaining space */
+  min-width: 0;                   /* allow shrinking properly */
+}
+
+.play-row .result {
+  flex: 0 0 auto;                 /* keep result text compact */
 }
 
 /* --- Responsive --- */
