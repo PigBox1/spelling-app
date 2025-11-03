@@ -653,6 +653,17 @@ button[disabled],
               </div>
             </div>
 
+            <div class="settings-row">
+              <div class="label">Definition</div>
+              <div class="control">
+                <div class="segmented" id="segDefinitionTiming">
+                  <button data-val="before" type="button">Show before</button>
+                  <button data-val="after" type="button">Show after</button>
+                </div>
+              </div>
+            </div>
+
+
             <div class="small" style="color:#666">made with ❤️ (and chatgpt) by daniel</div>
           </div>
         </section>
@@ -684,6 +695,7 @@ button[disabled],
 
   const statsList = document.getElementById('statsList'), statsSummary = document.getElementById('statsSummary'), btnClearStats = document.getElementById('btnClearStats');
   const segDifficulty = document.getElementById('segDifficulty'), segMode = document.getElementById('segMode');
+  const segDefinitionTiming = document.getElementById('segDefinitionTiming');
   const voiceSelect = document.getElementById('voiceSelect');
 
   const autoNextBtn = document.getElementById('autoNextBtn');
@@ -709,7 +721,7 @@ button[disabled],
   const HARDCORE_MAX_REPLAYS = 3;
 
   let stats = JSON.parse(localStorage.getItem('spelling_stats') || '[]');
-  const defaultSettings = { autoNext:false, difficulty:'proficient', mode:'normal', voice:'' };
+  const defaultSettings = { autoNext:false, difficulty:'proficient', mode:'normal', voice:'', defTiming:'before' };
   let settings = Object.assign({}, defaultSettings, JSON.parse(localStorage.getItem('spelling_settings') || '{}'));
 
   // colors
@@ -905,6 +917,11 @@ button[disabled],
     return 1.0;
   }
 
+// When definitions are hidden until AFTER the guess, award a 1.25x multiplier.
+  function getDefinitionTimingMultiplier(){
+    return (settings.defTiming === 'after') ? 1.25 : 1.0;
+  }
+  
   function showFloating(points, type){
     const comboEl = document.getElementById('combo');
     if (!comboEl) return;
@@ -947,7 +964,7 @@ button[disabled],
     for (let i = firstRemaining; i <= endIndex; i++) segEls[i].style.background = 'transparent';
   }
 
-  // NEW: updateRevealHint now writes into the input placeholder (for easy mode)
+  // updateRevealHint now writes into the input placeholder (for easy mode)
   function updateRevealHint(){
     if (settings.mode !== 'easy' || !currentWord){ 
       // reset placeholder to default when not easy
@@ -1013,7 +1030,8 @@ async function startNewRound(manual=false){
     const secs = Math.max(0.01, (performance.now() - roundStart) / 1000);
     const basePts = computePoints(best, currentWord, secs);
     const modeMult = getModeScoreMultiplier();
-    const awarded = Math.round(basePts * multiplier * modeMult);
+    const defMult  = getDefinitionTimingMultiplier();
+    const awarded = Math.round(basePts * multiplier * modeMult * defMult);
     if (awarded > 0){ totalScore += awarded; updateScore(); showFloating(awarded, best===1 ? 'green' : (best>=0.6 ? 'yellow' : 'red')); }
     stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: awarded, correct: best===1, incomplete:true, mode: settings.mode });
     persistStats();
@@ -1070,6 +1088,22 @@ async function startNewRound(manual=false){
       console.warn('prefetch definition failed', e);
     }
   })();
+
+  // if user wants to see definition BEFORE guessing, display cached def immediately
+  if (settings.defTiming === 'before') {
+    const cached = definitionsCache[currentWord];
+    if (cached === undefined) {
+      // will be fetched in the background; optionally show "Looking up definition..."
+      hintLine.textContent = 'Looking up definition…';
+    } else if (cached === null) {
+      hintLine.innerHTML = '<strong>Definition:</strong> Definition unavailable';
+    } else {
+      hintLine.innerHTML = `<strong>Definition:</strong> ${escapeHtml(cached)}`;
+    }
+  } else {
+    // hide definition now (will show only after round ends)
+    hintLine.textContent = '';
+  }
 
   // automatic initial spoken audio (do not count towards hardcore replay limit)
   setTimeout(()=>{ 
@@ -1136,18 +1170,19 @@ async function onCheck(){
   const secs = Math.max(0.01, (performance.now() - roundStart) / 1000);
   let pts = 0;
   const modeMult = getModeScoreMultiplier();
+  const defMult = getDefinitionTimingMultiplier();
   if (outcome === 'correct'){
     if (settings.mode === 'easy'){
       const attemptNo = attemptsThisRound.length;
       const mult = easyAttemptMultiplier(attemptNo);
-      pts = Math.round(computePoints(1.0, currentWord, secs) * mult * modeMult);
+      pts = Math.round(computePoints(1.0, currentWord, secs) * mult * modeMult * defMult);
     } else {
-      pts = Math.round(computePoints(1.0, currentWord, secs) * modeMult);
+      pts = Math.round(computePoints(1.0, currentWord, secs) * modeMult * defMult);
     }
     totalScore += pts; updateScore(); showFloating(pts, 'green');
   } else if (outcome === 'almost'){
-    if (settings.mode === 'easy'){ pts = Math.round(computePoints(0.6, currentWord, secs) * easyAttemptMultiplier(attemptsThisRound.length) * modeMult); }
-    else { pts = Math.round(computePoints(0.6, currentWord, secs) * modeMult); }
+    if (settings.mode === 'easy'){ pts = Math.round(computePoints(0.6, currentWord, secs) * easyAttemptMultiplier(attemptsThisRound.length) * modeMult * defMult); }
+    else { pts = Math.round(computePoints(0.6, currentWord, secs) * modeMult * defMult); }
     totalScore += pts; updateScore(); showFloating(pts, 'yellow');
   } else {
     showFloating(0, 'red');
@@ -1210,19 +1245,24 @@ async function onCheck(){
       persistStats();
 
       // show definition (use cached prefetched value)
-      const cached = definitionsCache[currentWord];
-      if (cached !== undefined) {
-        if (cached) hintLine.innerHTML = `<strong>Definition:</strong> ${escapeHtml(cached)}`;
-        else hintLine.innerHTML = `<strong>Definition:</strong> Definition unavailable`;
-      } else {
-        hintLine.textContent = 'Looking up definition…';
-        const variantsToTry = (window.variantsMap && window.variantsMap[currentWord]) || [currentWord];
-        const def = await fetchDefinitionForVariants(variantsToTry);
-        definitionsCache[currentWord] = def || null;
-        persistDefinitionsCache();
-        if (def) hintLine.innerHTML = `<strong>Definition:</strong> ${escapeHtml(def)}`;
-        else hintLine.innerHTML = `<strong>Definition:</strong> Definition unavailable`;
-      }
+      if (settings.defTiming === 'after') {
+      // set hintLine (use cached definition if possible)
+        const cached = definitionsCache[currentWord];
+        if (cached !== undefined) {
+          if (cached) hintLine.innerHTML = `<strong>Definition:</strong> ${escapeHtml(cached)}`;
+          else hintLine.innerHTML = `<strong>Definition:</strong> Definition unavailable`;
+        } else {
+          hintLine.textContent = 'Looking up definition…';
+          const variantsToTry = (window.variantsMap && window.variantsMap[currentWord]) || [currentWord];
+          const def = await fetchDefinitionForVariants(variantsToTry);
+          definitionsCache[currentWord] = def || null;
+          persistDefinitionsCache();
+          if (def) hintLine.innerHTML = `<strong>Definition:</strong> ${escapeHtml(def)}`;
+          else hintLine.innerHTML = `<strong>Definition:</strong> Definition unavailable`;
+          }
+      } 
+
+      
 
       if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer = setTimeout(()=>{ startNewRound(false); autoNextTimer = null; }, 3000); }
     } else {
@@ -1308,10 +1348,25 @@ async function onCheck(){
     Array.from(segDifficulty.querySelectorAll('button')).forEach(b => b.classList.toggle('on', b.dataset.val === settings.difficulty));
     // mode buttons
     Array.from(segMode.querySelectorAll('button')).forEach(b => b.classList.toggle('on', b.dataset.val === settings.mode));
+    // definition timing buttons
+    if (typeof segDefinitionTiming !== 'undefined') {
+      Array.from(segDefinitionTiming.querySelectorAll('button')).forEach(b => b.classList.toggle('on', b.dataset.val === settings.defTiming));
+    }
   }
 
   segDifficulty.addEventListener('click',(e)=>{ if (e.target.tagName!=='BUTTON') return; settings.difficulty = e.target.dataset.val; persistSettings(); renderSettings(); startNewRound(false); });
 
+  if (segDefinitionTiming) {
+  Array.from(segDefinitionTiming.querySelectorAll('button')).forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const val = btn.dataset.val || 'before';
+      settings.defTiming = val;
+      persistSettings();
+      renderSettings();
+    });
+  });
+}
+  
   // Tooltips for mode and difficulty (mobile-friendly)
   const modeTooltips = {
     easy: '5 attempts, progressive hints',
