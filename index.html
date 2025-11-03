@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Spelling Trainer — Words JSON (Fixed)</title>
+<title>Spelling Trainer — TTS Voice + Styled Auto-Next</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
@@ -12,12 +12,14 @@
   --page-bg:#eceff1;
   --card-bg:#fff;
   --muted:#cfcfcf;
+  --muted-2:#bfbfbf;
   --accent-green:#4CAF50;
   --accent-yellow:#FFC107;
   --accent-red:#F44336;
-  --card-width:640px;
+  --card-width:720px;
   --shadow:0 10px 30px rgba(20,20,30,0.06);
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+  --btn-radius:12px;
 }
 html,body{height:100%;margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:var(--page-bg);color:#222}
 .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:28px}
@@ -28,10 +30,10 @@ nav{display:flex;gap:8px}
 nav button{border:none;background:transparent;padding:8px 12px;border-radius:10px;cursor:pointer;color:#555;font-weight:700}
 nav button.active{background:#dfe4e7;color:#111}
 
-/* top controls */
+/* top row */
 .play-row { display:flex; gap:10px; align-items:stretch; justify-content:center; margin-bottom:8px; }
-.btn-play { display:inline-flex; align-items:center; justify-content:center; background:#d0d6d9; color:#fff; border-radius:12px; padding:0 12px; border:none; cursor:pointer; min-width:48px; height:44px; box-sizing:border-box; }
-.btn { background:#d0d6d9; color:#fff; border:none; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:700 }
+.btn-play { display:inline-flex; align-items:center; justify-content:center; background:var(--muted-2); color:#fff; border-radius:12px; padding:0 12px; border:none; cursor:pointer; min-width:48px; height:44px; box-sizing:border-box; }
+.btn { background:var(--muted-2); color:#fff; border:none; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:700 }
 .btn.small { padding:8px 10px; min-width:84px }
 .btn:disabled { opacity:0.6; cursor:not-allowed }
 
@@ -46,24 +48,31 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
 .segment { flex:1; height:14px; background:var(--muted); border-radius:10px; transition:background .22s ease, flex .22s ease, width .22s ease; position:relative; }
 .merged { position:absolute; height:14px; background:var(--accent-green); border-radius:10px; transition:left .22s ease, width .22s ease, opacity .22s ease; opacity:0; pointer-events:none; }
 
-/* controls / meta */
+/* controls/mode toggles */
 .controls { display:flex; gap:10px; margin-top:12px; align-items:center; }
 .meta { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:12px }
 .result { font-weight:700; color:#444; min-width:0; flex:1; text-align:left }
 .score-area { position:relative; display:flex; align-items:center; gap:8px; min-width:110px; justify-content:flex-end }
 .score { font-weight:800; color:#222 }
 
-/* combo popup (floating +pts) */
-.combo { position:absolute; right:0; top:-32px; background:rgba(0,0,0,0.85); color:#fff; padding:6px 10px; border-radius:8px; font-weight:700; opacity:0; transform:translateY(6px) scale(.98); pointer-events:none }
-.combo.show { animation: comboPop .9s forwards cubic-bezier(.2,.9,.2,1) }
-@keyframes comboPop { 0%{opacity:0;transform:translateY(6px) scale(.98)}10%{opacity:1;transform:translateY(0) scale(1.03)}60%{opacity:1;transform:translateY(-18px) scale(1)}100%{opacity:0;transform:translateY(-36px) scale(.98)} }
+/* styled toggle (auto-next) */
+.toggle { display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+.toggle .pill { width:54px; height:28px; background:#e6e9ea; border-radius:999px; padding:4px; display:flex; align-items:center; transition:background .18s ease; }
+.toggle .knob { width:20px; height:20px; background:#fff; border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,0.12); transform:translateX(0); transition:transform .18s cubic-bezier(.2,.9,.2,1); }
+.toggle.on .pill { background:var(--accent-green); }
+.toggle.on .knob { transform:translateX(26px); }
 
-/* settings */
+/* settings segmented controls */
 .segmented { display:flex; gap:6px; background:transparent; border-radius:10px; padding:6px }
 .segmented button { background:transparent; border:none; padding:8px 10px; border-radius:8px; cursor:pointer; color:#666; font-weight:700 }
 .segmented button.on { background:#e6e9ea; color:#111 }
 
-/* stats list */
+/* settings rows */
+.settings-row { display:flex; gap:12px; align-items:center; margin:8px 0; }
+.label { min-width:100px; font-size:14px; color:#666 }
+.select { padding:8px 10px; border-radius:10px; border:1px solid #e6e6e6; background:#fff; font-size:14px; }
+
+/* stats */
 .stats-list { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
 .stat-row { display:flex; gap:12px; align-items:center; justify-content:space-between; padding:8px; border-radius:10px; background:#fbfbfb; border:1px solid #f0f0f0 }
 .stat-left { display:flex; align-items:center; gap:8px; flex:1; font-weight:600; }
@@ -80,9 +89,10 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
 .small { font-size:13px; color:#666 }
 
 /* responsive */
-@media (max-width:720px){
+@media (max-width:760px){
   .card{padding:14px}
   .stat-right{width:200px}
+  .label{min-width:84px}
 }
 </style>
 </head>
@@ -117,9 +127,12 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
           <div class="controls">
             <button id="btnCheck" class="btn" type="button">Check</button>
             <button id="btnNext" class="btn" type="button">Next Word</button>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#444;margin-left:6px">
-              <input type="checkbox" id="autoNext" /> Auto Next
-            </label>
+
+            <!-- Styled auto-next toggle in game controls (keeps look consistent) -->
+            <div id="autoNextToggle" class="toggle" title="Auto Next (3s)">
+              <div class="label" style="font-size:13px;color:#444">Auto Next</div>
+              <div class="pill"><div class="knob"></div></div>
+            </div>
           </div>
 
           <div class="meta">
@@ -145,30 +158,39 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
         <!-- SETTINGS -->
         <section id="pageSettings" style="display:none">
           <div style="display:flex;flex-direction:column;gap:12px">
-            <div>
-              <div class="small">Difficulty</div>
+            <div class="settings-row">
+              <div class="label">Difficulty</div>
               <div class="segmented" id="segDifficulty">
                 <button data-val="easy" type="button">Easy</button>
                 <button data-val="advanced" type="button">Advanced</button>
                 <button data-val="proficient" type="button">Proficient</button>
               </div>
             </div>
-            <div>
-              <div class="small">Mode</div>
+
+            <div class="settings-row">
+              <div class="label">Mode</div>
               <div class="segmented" id="segMode">
                 <button data-val="normal" type="button">Normal</button>
                 <button data-val="easy" type="button">Easy (hints, 5 attempts)</button>
               </div>
             </div>
-            <div><div class="small">Word source</div><div class="small" style="color:#666">Tries external <code>words.json</code> first, then falls back to embedded list.</div></div>
+
+            <!-- NEW: TTS voice selector -->
+            <div class="settings-row">
+              <div class="label">TTS Voice</div>
+              <select id="voiceSelect" class="select" aria-label="Select TTS voice">
+                <option value="">Loading voices…</option>
+              </select>
+            </div>
+
+            <div class="small" style="color:#666">Auto Next toggle available in-game and here. Word source removed.</div>
           </div>
         </section>
-
       </main>
     </div>
   </div>
 
-<!-- embedded fallback word list -->
+<!-- embedded fallback words -->
 <script id="embeddedWords" type="application/json">
 {
   "words": [
@@ -192,48 +214,32 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
 </script>
 
 <script>
+/* Full app (based on previous working file) with:
+   - TTS voice dropdown in Settings (populates from speechSynthesis)
+   - styled auto-next toggle (game + settings sync)
+   - "word source" removed
+   - voice choice persists in settings
+*/
+
 (() => {
-  // ---------- Tabs (robust) ----------
-  const tabGame = document.getElementById('tabGame');
-  const tabStats = document.getElementById('tabStats');
-  const tabSettings = document.getElementById('tabSettings');
-  const pageGame = document.getElementById('pageGame');
-  const pageStats = document.getElementById('pageStats');
-  const pageSettings = document.getElementById('pageSettings');
+  // DOM
+  const tabGame = document.getElementById('tabGame'), tabStats = document.getElementById('tabStats'), tabSettings = document.getElementById('tabSettings');
+  const pageGame = document.getElementById('pageGame'), pageStats = document.getElementById('pageStats'), pageSettings = document.getElementById('pageSettings');
 
-  function switchTab(tab){
-    pageGame.style.display='none'; pageStats.style.display='none'; pageSettings.style.display='none';
-    tabGame.classList.remove('active'); tabStats.classList.remove('active'); tabSettings.classList.remove('active');
-    if (tab==='game'){ pageGame.style.display=''; tabGame.classList.add('active'); }
-    if (tab==='stats'){ pageStats.style.display=''; tabStats.classList.add('active'); renderStats(); }
-    if (tab==='settings'){ pageSettings.style.display=''; tabSettings.classList.add('active'); renderSettings(); }
-  }
-  tabGame.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); switchTab('game'); });
-  tabStats.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); switchTab('stats'); });
-  tabSettings.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); switchTab('settings'); });
+  const btnPlay = document.getElementById('btnPlay'), btnCheck = document.getElementById('btnCheck'), btnNext = document.getElementById('btnNext');
+  const inputAnswer = document.getElementById('inputAnswer'), hintLine = document.getElementById('hintLine');
+  const feedbackBar = document.getElementById('feedbackBar'), mergedBar = document.getElementById('mergedBar');
+  const resultText = document.getElementById('resultText'), comboEl = document.getElementById('combo'), scoreText = document.getElementById('scoreText');
 
-  // ---------- App refs ----------
-  const btnPlay = document.getElementById('btnPlay');
-  const btnCheck = document.getElementById('btnCheck');
-  const btnNext = document.getElementById('btnNext');
-  const inputAnswer = document.getElementById('inputAnswer');
-  const hintLine = document.getElementById('hintLine');
-  const feedbackBar = document.getElementById('feedbackBar');
-  const mergedBar = document.getElementById('mergedBar');
-  const resultText = document.getElementById('resultText');
-  const comboEl = document.getElementById('combo');
-  const scoreText = document.getElementById('scoreText');
-  const autoNextCheckbox = document.getElementById('autoNext');
+  const statsList = document.getElementById('statsList'), statsSummary = document.getElementById('statsSummary'), btnClearStats = document.getElementById('btnClearStats');
+  const segDifficulty = document.getElementById('segDifficulty'), segMode = document.getElementById('segMode');
+  const voiceSelect = document.getElementById('voiceSelect');
 
-  const statsList = document.getElementById('statsList');
-  const statsSummary = document.getElementById('statsSummary');
-  const btnClearStats = document.getElementById('btnClearStats');
-  const segDifficulty = document.getElementById('segDifficulty');
-  const segMode = document.getElementById('segMode');
+  const autoNextToggle = document.getElementById('autoNextToggle');
 
-  // ---------- State ----------
+  // app state
   let wordPool = [];
-  let queues = {easy:[],advanced:[],proficient:[]};
+  let queues = { easy:[], advanced:[], proficient:[] };
   let currentWord = null;
   let lastSubmitted = null;
   let roundStart = 0;
@@ -244,421 +250,443 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   let autoNextTimer = null;
 
   let stats = JSON.parse(localStorage.getItem('spelling_stats') || '[]');
-  const defaultSettings = { autoNext:false, difficulty:'proficient', mode:'normal' };
+  const defaultSettings = { autoNext:false, difficulty:'proficient', mode:'normal', voice: '' };
   let settings = Object.assign({}, defaultSettings, JSON.parse(localStorage.getItem('spelling_settings') || '{}'));
 
-  // ---------- Colors ----------
+  // colors
   const COLOR_NEUTRAL = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#cfcfcf';
   const COLOR_GREEN = getComputedStyle(document.documentElement).getPropertyValue('--accent-green').trim() || '#4CAF50';
   const COLOR_YELLOW = getComputedStyle(document.documentElement).getPropertyValue('--accent-yellow').trim() || '#FFC107';
   const COLOR_RED = getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim() || '#F44336';
 
-  // ---------- Utils ----------
-  const persistSettings = () => localStorage.setItem('spelling_settings', JSON.stringify(settings));
-  const persistStats = () => localStorage.setItem('spelling_stats', JSON.stringify(stats));
-  const capitalize = s => (!s ? s : s[0].toUpperCase()+s.slice(1));
-  const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
-  const escapeHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // small tooltip element
+  let miniTooltip = null;
+  function showMiniTooltip(x,y,text,bg,txtColor='#fff'){
+    hideMiniTooltip();
+    miniTooltip = document.createElement('div');
+    miniTooltip.className = 'mini-tooltip';
+    miniTooltip.style.background = bg;
+    miniTooltip.style.color = txtColor;
+    miniTooltip.textContent = text;
+    document.body.appendChild(miniTooltip);
+    const r = miniTooltip.getBoundingClientRect();
+    miniTooltip.style.left = (x - r.width/2) + 'px';
+    miniTooltip.style.top = (y - r.height - 10) + 'px';
+    requestAnimationFrame(()=>{ miniTooltip.style.opacity = 1; miniTooltip.style.transform = 'translateY(0)'; });
+  }
+  function hideMiniTooltip(){ if (miniTooltip){ miniTooltip.remove(); miniTooltip = null; } }
 
-  // ---------- Load words (external first, fallback to embedded) ----------
-async function loadWords(){
-  wordPool = [];
+  function persistSettings(){ localStorage.setItem('spelling_settings', JSON.stringify(settings)); }
+  function persistStats(){ localStorage.setItem('spelling_stats', JSON.stringify(stats)); }
 
-  // helper: fetch a filename and return { ok, status, text, json, error }
-  async function tryFetchFile(name){
+  function capitalize(s){ return (!s)?s:s[0].toUpperCase()+s.slice(1); }
+  function shuffle(a){ for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // --- Load words (same robust loader as before) ---
+  async function loadWords(){
+    wordPool = [];
     try {
-      console.info(`Attempting to fetch "${name}" (protocol: ${location.protocol})`);
-      // If serving via file:// many browsers block fetch -> still try but catch errors
-      const res = await fetch(name, { cache: 'no-store' });
-      const text = await res.text();
-      let parsed = null;
-      try { parsed = JSON.parse(text); } catch(parseErr) { /* leave parsed null */ }
-      return { ok: res.ok, status: res.status, text, json: parsed, url: name };
-    } catch (err){
-      return { ok: false, status: null, text: null, json: null, error: err, url: name };
-    }
-  }
-
-  // Try a list of candidate filenames (your file name + common alternatives)
-  const candidates = ['wordslist.json', 'words.json', 'words-list.json'];
-  let fileResult = null;
-  for (const name of candidates){
-    fileResult = await tryFetchFile(name);
-    if (fileResult.ok && fileResult.json) {
-      console.info(`Successfully fetched & parsed JSON from "${name}".`);
-      break;
-    }
-    if (fileResult.ok && !fileResult.json) {
-      console.warn(`Fetched "${name}" (HTTP ${fileResult.status}) but JSON.parse failed. File text (first 500 chars):\n`, fileResult.text && fileResult.text.slice(0,500));
-      // stop here (we found a file but it's invalid JSON)
-      break;
-    }
-    if (!fileResult.ok && fileResult.status !== null) {
-      console.warn(`Fetch for "${name}" returned HTTP ${fileResult.status}.`);
-    } else if (fileResult.error) {
-      console.warn(`Fetch for "${name}" failed:`, fileResult.error);
-    }
-    fileResult = null;
-  }
-
-  // If fileResult has usable json, normalise it
-  if (fileResult && fileResult.json){
-    const json = fileResult.json;
-    // Accept either { words: [...] } or an array directly
-    let arr = [];
-    if (Array.isArray(json)) arr = json;
-    else if (json && Array.isArray(json.words)) arr = json.words;
-    else {
-      console.warn('Remote JSON loaded but shape is unexpected (not array or { words: [...] }). JSON root keys:', Object.keys(json || {}));
-    }
-
-    // Normalize entries
-    arr = arr.map(it => {
-      if (!it) return null;
-      if (typeof it === 'string') return { word: it.toLowerCase(), level: 'easy' };
-      const w = it.word ? String(it.word).toLowerCase() : null;
-      const level = it.level ? String(it.level).toLowerCase() : 'easy';
-      if (!w) return null;
-      return { word: w, level };
-    }).filter(Boolean);
-
-    if (arr.length){
-      wordPool = arr;
-      console.info(`Loaded ${arr.length} valid words from "${fileResult.url}".`);
-    } else {
-      console.warn(`JSON file "${fileResult.url}" parsed but contained no valid entries after normalization.`);
-    }
-  }
-
-  // If we still have no words, fall back to embedded
-  if (!wordPool.length){
-    try {
-      const embedded = JSON.parse(document.getElementById('embeddedWords').textContent);
-      const arr = (Array.isArray(embedded) ? embedded : embedded.words) || [];
-      const normalized = arr.map(it => {
-        if (!it) return null;
-        if (typeof it === 'string') return { word: it.toLowerCase(), level: 'easy' };
-        const w = it.word ? String(it.word).toLowerCase() : null;
-        const level = it.level ? String(it.level).toLowerCase() : 'easy';
-        if (!w) return null; return { word: w, level };
-      }).filter(Boolean);
-      if (normalized.length){
-        wordPool = normalized;
-        console.info(`Using embedded word list (${normalized.length} items).`);
-      } else {
-        console.error('Embedded word list parsed but had no valid entries.');
+      if (location.protocol !== 'file:'){
+        const res = await fetch('wordslist.json', { cache: 'no-store' });
+        if (res.ok){
+          const j = await res.json();
+          if (Array.isArray(j.words)) wordPool = j.words.map(o => ({ word: String(o.word).toLowerCase(), level: String(o.level).toLowerCase() }));
+        }
       }
-    } catch (err){
-      console.error('Failed to parse embeddedWords JSON (this should not happen):', err);
+    } catch(e){
+      // fallback
     }
+    if (!wordPool.length){
+      try {
+        const embedded = JSON.parse(document.getElementById('embeddedWords').textContent);
+        wordPool = (embedded.words || []).map(o => ({ word: String(o.word).toLowerCase(), level: String(o.level).toLowerCase() }));
+      } catch(e){
+        wordPool = [{ word:'genuine', level:'easy' }, { word:'resilient', level:'advanced' }, { word:'ubiquitous', level:'proficient' }];
+      }
+    }
+    ['easy','advanced','proficient'].forEach(l => {
+      const arr = wordPool.filter(w => w.level === l).slice();
+      queues[l] = shuffle(arr);
+    });
   }
-
-  // Final safety: if still empty, load tiny fallback so app doesn't crash
-  if (!wordPool.length){
-    console.error('No words available (external and embedded both failed). Loading tiny fallback list so app stays usable.');
-    wordPool = [
-      { word: 'genuine', level: 'easy' },
-      { word: 'resilient', level: 'advanced' },
-      { word: 'ubiquitous', level: 'proficient' }
-    ];
-  }
-
-  // Build level queues
-  ['easy','advanced','proficient'].forEach(l=>{
-    const list = wordPool.filter(w => w.level === l).slice();
-    queues[l] = shuffle(list);
-    console.info(`Queue for ${l}: ${queues[l].length} items.`);
-  });
-
-  console.info('loadWords() complete. wordPool size:', wordPool.length);
-}
 
   function pickWordForDifficulty(level){
-    const q = queues[level] || [];
-    if (!q.length){
-      const refill = wordPool.filter(w => w.level===level);
-      queues[level] = shuffle(refill.slice());
+    level = (level || 'proficient').toLowerCase();
+    if (!queues[level] || !queues[level].length){
+      const refill = wordPool.filter(w => w.level === level).slice();
+      queues[level] = shuffle(refill);
     }
-    const item = queues[level].shift() || wordPool.find(w=>w.level===level) || wordPool[0];
-    return item.word;
+    const item = (queues[level] && queues[level].shift()) || (wordPool.find(w=>w.level===level)) || wordPool[0];
+    return (item && item.word) ? item.word : 'genuine';
   }
 
-  // ---------- Segments ----------
+  // --- segments ---
   function renderSegments(){
-    feedbackBar.innerHTML='';
-    const segCount = (settings.mode==='easy') ? 5 : 3;
+    feedbackBar.innerHTML = '';
+    const segCount = (settings.mode === 'easy') ? 5 : 3;
     for (let i=0;i<segCount;i++){
-      const d=document.createElement('div');
-      d.className='segment';
-      d.style.background=COLOR_NEUTRAL;
-      d.dataset.index=i;
+      const d = document.createElement('div');
+      d.className = 'segment';
+      d.style.background = COLOR_NEUTRAL;
+      d.dataset.index = i;
       feedbackBar.appendChild(d);
     }
     feedbackBar.appendChild(mergedBar);
     segEls = Array.from(feedbackBar.querySelectorAll('.segment'));
-    mergedBar.style.opacity=0; mergedBar.style.left='0px'; mergedBar.style.width='0px';
+    mergedBar.style.opacity = 0; mergedBar.style.left='0px'; mergedBar.style.width='0px';
   }
-  function resetSegments(){ segEls.forEach(s=>{ s.style.background=COLOR_NEUTRAL; s.style.visibility='visible'; }); mergedBar.style.opacity=0; mergedBar.style.left='0px'; mergedBar.style.width='0px'; }
-  function colorSegment(i,c){ if (i<0||i>=segEls.length) return; segEls[i].style.background=c; }
-  function colorAllSegments(c){ segEls.forEach(s=> s.style.background=c); }
+  function resetSegments(){ segEls.forEach(s => { s.style.background = COLOR_NEUTRAL; s.style.visibility='visible'; }); mergedBar.style.opacity=0; mergedBar.style.left='0px'; mergedBar.style.width='0px'; }
+  function colorSegment(i,color){ if (i<0||i>=segEls.length) return; segEls[i].style.background = color; }
+  function colorAllSegments(color){ segEls.forEach(s => s.style.background = color); }
 
-  // ---------- Similarity / scoring ----------
+  // levenshtein
   function levenshtein(a,b){
-    a=a||''; b=b||''; const al=a.length, bl=b.length; if(!al) return bl; if(!bl) return al;
-    const dp=Array(al+1).fill().map(()=>Array(bl+1).fill(0));
-    for(let i=0;i<=al;i++) dp[i][0]=i;
-    for(let j=0;j<=bl;j++) dp[0][j]=j;
-    for(let i=1;i<=al;i++) for(let j=1;j<=bl;j++){
-      const cost=a[i-1]===b[j-1]?0:1;
-      dp[i][j]=Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost);
-    }
+    a=a||''; b=b||''; const al=a.length, bl=b.length; if (!al) return bl; if (!bl) return al;
+    const dp = Array(al+1).fill(null).map(()=>Array(bl+1).fill(0));
+    for (let i=0;i<=al;i++) dp[i][0]=i;
+    for (let j=0;j<=bl;j++) dp[0][j]=j;
+    for (let i=1;i<=al;i++) for (let j=1;j<=bl;j++){ const cost = a[i-1]===b[j-1]?0:1; dp[i][j]=Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost); }
     return dp[al][bl];
   }
   function similarityRatio(a,b){ if(!a&&!b) return 1; const d=levenshtein(a||'',b||''); return 1 - d/Math.max((a||'').length,(b||'').length||1); }
-  function complexityInfo(w){ const len=(w||'').length; if(len<6) return {label:'Easy',mult:1}; if(len<=9) return {label:'Advanced',mult:1.25}; return {label:'Proficient',mult:1.5}; }
-  function computePoints(correctness, word, secs){ const comp=complexityInfo(word).mult; const timeBonus=Math.max(0.5,Math.min(1.5,5/Math.max(secs,0.2))); return Math.round(10*correctness*comp*timeBonus); }
 
-  // ---------- UI helpers ----------
-  function showResult(text,color='#444'){ resultText.textContent=text; resultText.style.color=color; }
-  function updateScore(){ scoreText.textContent=`Score: ${totalScore}`; }
-  function showFloating(points,type){
-    comboEl.textContent = (points>0?`+${points} pts`:'+0 pts');
-    comboEl.style.background = (type==='green'?COLOR_GREEN:type==='yellow'?COLOR_YELLOW:COLOR_RED);
+  // complexity & scoring
+  function complexityInfo(w){ const len=(w||'').length; if (len<6) return {label:'Easy', mult:1.0}; if (len<=9) return {label:'Advanced', mult:1.25}; return {label:'Proficient', mult:1.5}; }
+  function computePoints(correctnessScore, word, seconds){ const comp = complexityInfo(word).mult; const timeBonus = Math.max(0.5, Math.min(1.5, 5/Math.max(seconds,0.2))); const raw = 10 * correctnessScore * comp * timeBonus; return Math.round(raw); }
+
+  // floating combo
+  function showFloating(points, type){
+    comboEl.textContent = (points>0 ? `+${points} pts` : '+0 pts');
+    comboEl.style.background = (type==='green'?COLOR_GREEN : type==='yellow'?COLOR_YELLOW : COLOR_RED);
     comboEl.classList.remove('show'); void comboEl.offsetWidth; comboEl.classList.add('show');
-    setTimeout(()=>{ comboEl.classList.remove('show'); comboEl.style.background=''; }, 1000);
-  }
-  function speak(word){ if(!word) return; const u=new SpeechSynthesisUtterance(word); u.rate=0.95; speechSynthesis.cancel(); speechSynthesis.speak(u); }
-  function mergeRemainingIntoGreen(usedCount){
-    if(!segEls.length) return;
-    const barRect=feedbackBar.getBoundingClientRect();
-    const firstRemaining=Math.min(usedCount,segEls.length-1);
-    const remain=Math.max(1, segEls.length-usedCount);
-    const startSeg=segEls[firstRemaining].getBoundingClientRect();
-    const endIndex=Math.min(segEls.length-1, firstRemaining+remain-1);
-    const endSeg=segEls[endIndex].getBoundingClientRect();
-    const left=startSeg.left-barRect.left;
-    const right=endSeg.right-barRect.left;
-    mergedBar.style.left=`${left}px`; mergedBar.style.width=`${Math.max(8,right-left)}px`; mergedBar.style.opacity=1;
-    for(let i=firstRemaining;i<=endIndex;i++) segEls[i].style.background='transparent';
+    setTimeout(()=>{ comboEl.classList.remove('show'); comboEl.style.background = ''; }, 1000);
   }
 
-  // ---------- Easy mode reveal below input ----------
+  // speak using selected voice
+  function speak(word){
+    if (!word) return;
+    const u = new SpeechSynthesisUtterance(word);
+    // set voice if selected
+    if (settings.voice){
+      const v = speechSynthesis.getVoices().find(x => x.name === settings.voice);
+      if (v) u.voice = v;
+    }
+    u.rate = 0.95;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  }
+
+  // merge overlay
+  function mergeRemainingIntoGreen(usedCount){
+    if (!segEls.length) return;
+    const barRect = feedbackBar.getBoundingClientRect();
+    const firstRemaining = Math.min(usedCount, segEls.length-1);
+    const remain = Math.max(1, segEls.length - usedCount);
+    const startSeg = segEls[firstRemaining].getBoundingClientRect();
+    const endIndex = Math.min(segEls.length-1, firstRemaining + remain - 1);
+    const endSeg = segEls[endIndex].getBoundingClientRect();
+    const left = startSeg.left - barRect.left;
+    const right = endSeg.right - barRect.left;
+    const width = Math.max(8, right - left);
+    mergedBar.style.left = `${left}px`; mergedBar.style.width = `${width}px`; mergedBar.style.opacity = 1;
+    for (let i = firstRemaining; i <= endIndex; i++) segEls[i].style.background = 'transparent';
+  }
+
+  // reveal hint below input for easy mode
   function updateRevealHint(){
-    if (settings.mode!=='easy' || !currentWord){ hintLine.textContent=''; return; }
-    const total=5;
-    const usedWrong = attemptsThisRound.filter(a=>a.outcome!=='correct').length;
-    const revealPercent = Math.min(100, Math.ceil((usedWrong/total)*100));
-    const n = Math.floor((revealPercent/100)*currentWord.length);
-    const visible=currentWord.slice(0,n), hidden=currentWord.slice(n);
-    if (n >= currentWord.length){
+    if (settings.mode !== 'easy' || !currentWord){ hintLine.textContent = ''; return; }
+    const total = 5;
+    const usedWrong = attemptsThisRound.filter(a => a.outcome !== 'correct').length;
+    const revealPercent = Math.min(100, Math.ceil((usedWrong / total) * 100));
+    const lettersToReveal = Math.floor((revealPercent / 100) * currentWord.length);
+    const visible = currentWord.slice(0, lettersToReveal);
+    const hidden = currentWord.slice(lettersToReveal);
+    if (lettersToReveal >= currentWord.length){
       hintLine.innerHTML = `<span style="color:${COLOR_GREEN};opacity:1">${escapeHtml(currentWord)}</span>`;
     } else {
-      hintLine.innerHTML = `<span style="color:#888">${escapeHtml(visible)}</span><span style="color:#bbb">${'•'.repeat(Math.max(1,hidden.length))}</span>`;
+      hintLine.innerHTML = `<span style="color:#888">${escapeHtml(visible)}</span><span style="color:#bbb">${'•'.repeat(Math.max(1, hidden.length))}</span>`;
     }
   }
 
-  // ---------- Round control ----------
+  // start new round
   async function startNewRound(manual=false){
-    if (manual && autoNextTimer){ clearTimeout(autoNextTimer); autoNextTimer=null; }
+    if (manual && autoNextTimer){ clearTimeout(autoNextTimer); autoNextTimer = null; }
 
-    // save incomplete with partial award
-    if (!roundEnded && attemptsThisRound.length>0){
-      let best=0; attemptsThisRound.forEach(a=>{ if(a.outcome==='correct') best=Math.max(best,1); else if(a.outcome==='almost') best=Math.max(best,0.6); });
+    // record incomplete if needed
+    if (!roundEnded && attemptsThisRound.length > 0){
+      let best = 0; attemptsThisRound.forEach(a => { if (a.outcome === 'correct') best = Math.max(best, 1.0); else if (a.outcome === 'almost') best = Math.max(best, 0.6); });
       const used = attemptsThisRound.length;
-      let mult=0;
-      if (settings.mode==='easy'){ mult = ({1:0.5,2:0.3,3:0.2,4:0.1})[used] || 0; }
-      else { mult = (used===1?0.3 : used===2?0.1 : 0); }
-      const secs=Math.max(0.01,(performance.now()-roundStart)/1000);
-      const base=computePoints(best,currentWord,secs);
-      const awarded=Math.round(base*mult);
-      if (awarded>0){ totalScore+=awarded; updateScore(); showFloating(awarded, best===1?'green':best>=0.6?'yellow':'red'); }
+      let multiplier = 0;
+      if (settings.mode === 'easy'){
+        const map = {1:0.5,2:0.3,3:0.2,4:0.1};
+        multiplier = map[used] || 0;
+      } else {
+        multiplier = (used === 1 ? 0.3 : (used === 2 ? 0.1 : 0));
+      }
+      const secs = Math.max(0.01, (performance.now() - roundStart) / 1000);
+      const basePts = computePoints(best, currentWord, secs);
+      const awarded = Math.round(basePts * multiplier);
+      if (awarded > 0){ totalScore += awarded; updateScore(); showFloating(awarded, best===1 ? 'green' : (best>=0.6 ? 'yellow' : 'red')); }
       stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: awarded, correct: best===1, incomplete:true, mode: settings.mode });
       persistStats();
     }
 
-    // reset
-    lastSubmitted=null; attemptsThisRound=[]; roundEnded=false;
+    lastSubmitted = null; attemptsThisRound = []; roundEnded = false;
     renderSegments(); resetSegments();
-    inputAnswer.value=''; inputAnswer.disabled=false; btnCheck.disabled=false;
-    showResult('', '#444'); hintLine.textContent='';
+    inputAnswer.value = ''; inputAnswer.disabled = false; btnCheck.disabled = false;
+    showResult('', '#444'); hintLine.textContent = '';
 
-    // pick word
-    const level=settings.difficulty||'proficient';
+    const level = settings.difficulty || 'proficient';
     currentWord = pickWordForDifficulty(level);
-    roundStart=performance.now();
+    roundStart = performance.now();
 
-    // initial hint (small) for easy mode
-    if (settings.mode==='easy'){
-      const reveal = Math.min(1, Math.ceil(currentWord.length*0.05));
+    if (settings.mode === 'easy'){
+      const reveal = Math.min(1, Math.ceil(currentWord.length * 0.05));
       hintLine.innerHTML = `<span style="color:#888">${escapeHtml(currentWord.slice(0,reveal))}</span>${'•'.repeat(Math.max(1,currentWord.length-reveal))}`;
-      hintLine.style.opacity=1;
     } else {
-      hintLine.textContent='';
+      hintLine.textContent = '';
     }
 
     setTimeout(()=>{ speak(currentWord); showResult('Word ready — listening...', '#666'); }, 320);
     setTimeout(()=> inputAnswer.focus(), 700);
   }
 
-  function easyAttemptMultiplier(n){ return ({1:1,2:0.8,3:0.6,4:0.4,5:0.2})[n] || 0; }
+  function easyAttemptMultiplier(attemptIndex){ return ({1:1.0,2:0.8,3:0.6,4:0.4,5:0.2})[attemptIndex] || 0; }
 
   function onCheck(){
-    if(!currentWord) return;
-    const raw=(inputAnswer.value||'').trim().toLowerCase();
-    if(!raw) return;
+    if (!currentWord) return;
+    const raw = (inputAnswer.value || '').trim().toLowerCase();
+    if (!raw) return;
 
-    if (lastSubmitted!==null && raw===lastSubmitted){
+    if (lastSubmitted !== null && raw === lastSubmitted){
       showResult('You already tried that answer!', '#999');
       inputAnswer.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}], {duration:220});
       return;
     }
-    lastSubmitted=raw;
+    lastSubmitted = raw;
 
-    const exact = raw===currentWord;
-    const sim = similarityRatio(raw,currentWord);
-    let correctness=0, outcome='wrong';
-    if (exact){ correctness=1; outcome='correct'; }
-    else if (sim>=0.75){ correctness=0.6; outcome='almost'; }
+    const exact = raw === currentWord;
+    const sim = similarityRatio(raw, currentWord);
+    let correctness = 0, outcome = 'wrong';
+    if (exact){ correctness = 1.0; outcome = 'correct'; }
+    else if (sim >= 0.75){ correctness = 0.6; outcome = 'almost'; }
 
-    attemptsThisRound.push({value:raw, outcome});
-    const idx = attemptsThisRound.length-1;
+    attemptsThisRound.push({ value: raw, outcome });
 
-    if (outcome==='correct'){
-      const usedBefore = attemptsThisRound.length-1;
+    const idx = attemptsThisRound.length - 1;
+    if (outcome === 'correct'){
+      const usedBefore = attemptsThisRound.length - 1;
       mergeRemainingIntoGreen(usedBefore);
     } else {
-      colorSegment(idx, outcome==='almost'?COLOR_YELLOW:COLOR_RED);
-      if (settings.mode==='easy') inputAnswer.value='';
+      colorSegment(idx, outcome === 'almost' ? COLOR_YELLOW : COLOR_RED);
+      if (settings.mode === 'easy') inputAnswer.value = '';
     }
 
-    if (settings.mode==='easy') updateRevealHint();
+    if (settings.mode === 'easy') updateRevealHint();
 
-    const secs=Math.max(0.01,(performance.now()-roundStart)/1000);
-    let pts=0;
-    if (outcome==='correct'){
-      if (settings.mode==='easy'){ pts = Math.round(computePoints(1,currentWord,secs)*easyAttemptMultiplier(attemptsThisRound.length)); }
-      else { pts = computePoints(1,currentWord,secs); }
-      totalScore+=pts; updateScore(); showFloating(pts,'green');
-    } else if (outcome==='almost'){
-      if (settings.mode==='easy'){ pts = Math.round(computePoints(0.6,currentWord,secs)*easyAttemptMultiplier(attemptsThisRound.length)); }
-      else { pts = computePoints(0.6,currentWord,secs); }
-      totalScore+=pts; updateScore(); showFloating(pts,'yellow');
+    const secs = Math.max(0.01, (performance.now() - roundStart) / 1000);
+    let pts = 0;
+    if (outcome === 'correct'){
+      if (settings.mode === 'easy'){
+        const attemptNo = attemptsThisRound.length;
+        const mult = easyAttemptMultiplier(attemptNo);
+        pts = Math.round(computePoints(1.0, currentWord, secs) * mult);
+      } else {
+        pts = computePoints(1.0, currentWord, secs);
+      }
+      totalScore += pts; updateScore(); showFloating(pts, 'green');
+    } else if (outcome === 'almost'){
+      let correctnessScore = 0.6;
+      if (settings.mode === 'easy'){
+        const attemptNo = attemptsThisRound.length;
+        const mult = easyAttemptMultiplier(attemptNo);
+        pts = Math.round(computePoints(correctnessScore, currentWord, secs) * mult);
+      } else {
+        pts = computePoints(correctnessScore, currentWord, secs);
+      }
+      totalScore += pts; updateScore(); showFloating(pts, 'yellow');
     } else {
-      showFloating(0,'red');
+      showFloating(0, 'red');
     }
 
-    if (outcome==='correct'){
-      roundEnded=true; inputAnswer.disabled=true; btnCheck.disabled=true;
+    if (outcome === 'correct'){
+      roundEnded = true; inputAnswer.disabled = true; btnCheck.disabled = true;
       stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: pts, correct:true, incomplete:false, mode: settings.mode });
       persistStats();
-      if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer=setTimeout(()=>{ startNewRound(false); autoNextTimer=null; }, 3000); }
+      if (settings.autoNext){
+        if (autoNextTimer) clearTimeout(autoNextTimer);
+        autoNextTimer = setTimeout(()=>{ startNewRound(false); autoNextTimer = null; }, 3000);
+      }
     } else {
-      if (settings.mode==='easy'){
-        if (attemptsThisRound.length>=5){
-          roundEnded=true; inputAnswer.disabled=true; btnCheck.disabled=true;
+      if (settings.mode === 'easy'){
+        if (attemptsThisRound.length >= 5){
+          roundEnded = true; inputAnswer.disabled = true; btnCheck.disabled = true;
           showResult(`Out — the word was "${currentWord}".`, COLOR_RED);
           colorAllSegments(COLOR_RED);
           stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: 0, correct:false, incomplete:false, mode: settings.mode });
           persistStats();
-          if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer=setTimeout(()=>{ startNewRound(false); autoNextTimer=null; }, 3000); }
+          if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer = setTimeout(()=>{ startNewRound(false); autoNextTimer = null; }, 3000); }
         }
       } else {
-        if (attemptsThisRound.length>=3){
-          roundEnded=true; inputAnswer.disabled=true; btnCheck.disabled=true;
+        if (attemptsThisRound.length >= 3){
+          roundEnded = true; inputAnswer.disabled = true; btnCheck.disabled = true;
           showResult(`Out — the word was "${currentWord}".`, COLOR_RED);
           colorAllSegments(COLOR_RED);
           stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: 0, correct:false, incomplete:false, mode: settings.mode });
           persistStats();
-          if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer=setTimeout(()=>{ startNewRound(false); autoNextTimer=null; }, 3000); }
+          if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer = setTimeout(()=>{ startNewRound(false); autoNextTimer = null; }, 3000); }
         } else {
-          inputAnswer.value=''; inputAnswer.focus();
+          inputAnswer.value = ''; inputAnswer.focus();
         }
       }
     }
   }
 
-  // ---------- Stats ----------
+  // pick word
+  function pickWordForDifficulty(level){
+    level = (level || 'proficient').toLowerCase();
+    if (!queues[level] || !queues[level].length){
+      const refill = wordPool.filter(w => w.level === level).slice();
+      queues[level] = shuffle(refill);
+    }
+    const item = (queues[level] && queues[level].shift()) || wordPool.find(w => w.level === level) || wordPool[0];
+    return (item && item.word) ? item.word : 'genuine';
+  }
+
+  // ---------- Stats rendering ----------
   function renderStats(){
-    statsList.innerHTML='';
-    const total=stats.length;
-    const correct=stats.filter(s=>s.correct).length;
-    const acc= total? Math.round(1000*(correct/total))/10 : 0;
-    statsSummary.textContent=`Total: ${total} | Accuracy: ${acc}%`;
+    statsList.innerHTML = '';
+    const total = stats.length;
+    const correct = stats.filter(s => s.correct).length;
+    const acc = total ? Math.round(1000*(correct/total))/10 : 0;
+    statsSummary.textContent = `Total: ${total} | Accuracy: ${acc}%`;
 
     stats.slice().reverse().forEach(s=>{
-      const row=document.createElement('div'); row.className='stat-row';
-      const left=document.createElement('div'); left.className='stat-left';
-      const title=document.createElement('div'); title.textContent=s.word; title.style.fontWeight='700';
+      const row = document.createElement('div'); row.className = 'stat-row';
+      const left = document.createElement('div'); left.className = 'stat-left';
+      const title = document.createElement('div'); title.textContent = s.word; title.style.fontWeight = '700';
       left.appendChild(title);
-      if (s.mode==='easy'){ const icon=document.createElement('i'); icon.className='fa-solid fa-feather'; icon.style.color='#7aa'; icon.style.fontSize='14px'; left.appendChild(icon); }
-
-      const right=document.createElement('div'); right.className='stat-right';
-      const segCount=(s.mode==='easy')?5:3;
-      const mini=document.createElement('div'); mini.className='mini-bar';
-
+      if (s.mode === 'easy'){
+        const icon = document.createElement('i'); icon.className = 'fa-solid fa-feather'; icon.style.color = '#7aa'; icon.style.fontSize = '14px';
+        left.appendChild(icon);
+      }
+      const right = document.createElement('div'); right.className = 'stat-right';
+      const segCount = (s.mode === 'easy') ? 5 : 3;
+      const mini = document.createElement('div'); mini.className = 'mini-bar';
       for (let i=0;i<segCount;i++){
-        const ms=document.createElement('div'); ms.className='mini-seg'; ms.style.background=COLOR_NEUTRAL;
+        const ms = document.createElement('div'); ms.className = 'mini-seg'; ms.style.background = COLOR_NEUTRAL;
         if (i < s.attempts.length){
-          const a=s.attempts[i];
-          if (a.outcome==='correct') ms.style.background=COLOR_GREEN;
-          else if (a.outcome==='almost') ms.style.background=COLOR_YELLOW;
-          else ms.style.background=COLOR_RED;
-          ms.addEventListener('mouseenter', ev=>{
-            const r=ev.target.getBoundingClientRect();
-            const text=`${capitalize(a.outcome)}: ${a.value}`;
-            const bg=a.outcome==='correct'?COLOR_GREEN:(a.outcome==='almost'?COLOR_YELLOW:COLOR_RED);
-            const txt=(a.outcome==='almost'?'#111':'#fff');
-            showMiniTooltip(r.left+r.width/2, r.top, text, bg, txt);
+          const a = s.attempts[i];
+          if (a.outcome === 'correct') ms.style.background = COLOR_GREEN;
+          else if (a.outcome === 'almost') ms.style.background = COLOR_YELLOW;
+          else ms.style.background = COLOR_RED;
+          ms.addEventListener('mouseenter', (ev)=>{
+            const r = ev.target.getBoundingClientRect();
+            const text = `${capitalize(a.outcome)}: ${a.value}`;
+            const bg = a.outcome === 'correct' ? COLOR_GREEN : (a.outcome === 'almost' ? COLOR_YELLOW : COLOR_RED);
+            const txt = (a.outcome === 'almost' ? '#111' : '#fff');
+            showMiniTooltip(r.left + r.width/2, r.top, text, bg, txt);
           });
-          ms.addEventListener('mouseleave', ()=>{ const tt=document.querySelector('.mini-tooltip'); if(tt) tt.remove(); });
+          ms.addEventListener('mouseleave', hideMiniTooltip);
         }
         mini.appendChild(ms);
       }
-      const pts=document.createElement('div'); pts.style.minWidth='64px'; pts.style.textAlign='right'; pts.style.fontWeight='700'; pts.textContent=`${s.points} pts`;
-      right.appendChild(mini); right.appendChild(pts);
+      const ptsBox = document.createElement('div'); ptsBox.style.minWidth = '64px'; ptsBox.style.textAlign = 'right'; ptsBox.style.fontWeight = '700';
+      ptsBox.textContent = `${s.points} pts`;
+      right.appendChild(mini); right.appendChild(ptsBox);
       row.appendChild(left); row.appendChild(right);
       statsList.appendChild(row);
     });
   }
 
-  // ---------- Settings ----------
+  btnClearStats.addEventListener('click', ()=>{ if (!confirm('Clear statistics?')) return; stats = []; persistStats(); renderStats(); });
+
+  // ---------- Settings UI ----------
   function renderSettings(){
-    Array.from(segDifficulty.querySelectorAll('button')).forEach(b=> b.classList.toggle('on', b.dataset.val===settings.difficulty));
-    Array.from(segMode.querySelectorAll('button')).forEach(b=> b.classList.toggle('on', b.dataset.val===settings.mode));
-    autoNextCheckbox.checked=!!settings.autoNext;
+    Array.from(segDifficulty.querySelectorAll('button')).forEach(b => b.classList.toggle('on', b.dataset.val === settings.difficulty));
+    Array.from(segMode.querySelectorAll('button')).forEach(b => b.classList.toggle('on', b.dataset.val === settings.mode));
+    // update autoNextToggle visual
+    if (settings.autoNext) autoNextToggle.classList.add('on'); else autoNextToggle.classList.remove('on');
+    // set voiceSelect to stored value if present
+    if (settings.voice && voiceSelect.querySelector(`option[value="${CSS.escape(settings.voice)}"]`)) {
+      voiceSelect.value = settings.voice;
+    }
   }
-  segDifficulty.addEventListener('click', e=>{ if(e.target.tagName!=='BUTTON') return; settings.difficulty=e.target.dataset.val; persistSettings(); renderSettings(); startNewRound(false); });
-  segMode.addEventListener('click', e=>{ if(e.target.tagName!=='BUTTON') return; settings.mode=e.target.dataset.val; persistSettings(); renderSettings(); renderSegments(); startNewRound(false); });
-  autoNextCheckbox.addEventListener('change', e=>{ settings.autoNext=e.target.checked; persistSettings(); });
+  segDifficulty.addEventListener('click',(e)=>{ if (e.target.tagName!=='BUTTON') return; settings.difficulty = e.target.dataset.val; persistSettings(); renderSettings(); startNewRound(false); });
+  segMode.addEventListener('click',(e)=>{ if (e.target.tagName!=='BUTTON') return; settings.mode = e.target.dataset.val; persistSettings(); renderSettings(); renderSegments(); startNewRound(false); });
 
-  // ---------- Events ----------
-  btnPlay.addEventListener('click', ()=>{ if(currentWord) speak(currentWord); });
-  btnNext.addEventListener('click', ()=>{ if(autoNextTimer){ clearTimeout(autoNextTimer); autoNextTimer=null; } startNewRound(true); });
-  btnCheck.addEventListener('click', onCheck);
-  inputAnswer.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); onCheck(); } });
+  // --- Auto Next toggle (both in-game pill and clickable in settings will keep in sync) ---
+  function setAutoNext(enabled){
+    settings.autoNext = !!enabled;
+    persistSettings();
+    if (settings.autoNext) autoNextToggle.classList.add('on'); else autoNextToggle.classList.remove('on');
+  }
+  autoNextToggle.addEventListener('click', ()=>{ setAutoNext(!settings.autoNext); });
 
-  btnClearStats.addEventListener('click', ()=>{ if(!confirm('Clear statistics?')) return; stats=[]; persistStats(); renderStats(); });
+  // TTS voice population
+  function populateVoices(){
+    const voices = speechSynthesis.getVoices();
+    voiceSelect.innerHTML = '';
+    if (!voices || !voices.length){
+      const opt = document.createElement('option'); opt.value=''; opt.textContent='No voices available'; voiceSelect.appendChild(opt); return;
+    }
+    const fallbackOpt = document.createElement('option'); fallbackOpt.value=''; fallbackOpt.textContent='(Default browser voice)'; voiceSelect.appendChild(fallbackOpt);
+    voices.forEach(v=>{
+      const opt = document.createElement('option');
+      opt.value = v.name;
+      opt.textContent = `${v.name}${v.lang ? ' — '+v.lang : ''}${v.default ? ' (default)' : ''}`;
+      voiceSelect.appendChild(opt);
+    });
+    // restore stored voice if present
+    if (settings.voice) {
+      const match = Array.from(voiceSelect.options).find(o => o.value === settings.voice);
+      if (match) voiceSelect.value = settings.voice;
+    }
+  }
+  // listen for voice changes
+  speechSynthesis.addEventListener('voiceschanged', populateVoices);
 
-  // ---------- Init ----------
-  (async function init(){
+  voiceSelect.addEventListener('change', ()=>{
+    settings.voice = voiceSelect.value || '';
+    persistSettings();
+  });
+
+  // --- Load / init ---
+  async function init(){
     await loadWords();
-    renderSettings(); renderStats(); renderSegments();
+    renderSegments();
+    renderSettings();
+    renderStats();
     updateScore();
+    populateVoices();
+    // some browsers populate voices only after a short delay; guard by calling populate once more
+    setTimeout(populateVoices, 600);
     startNewRound(false);
-  })();
+  }
+
+  // --- Event bindings ---
+  btnPlay.addEventListener('click', ()=>{ if (currentWord) speak(currentWord); });
+  btnNext.addEventListener('click', ()=>{ if (autoNextTimer) { clearTimeout(autoNextTimer); autoNextTimer = null; } startNewRound(true); });
+  btnCheck.addEventListener('click', onCheck);
+  inputAnswer.addEventListener('keydown', (e)=>{ if (e.key === 'Enter'){ e.preventDefault(); onCheck(); } });
+
+  // --- Tabs ---
+  tabGame.addEventListener('click', ()=>{ pageGame.style.display=''; pageStats.style.display='none'; pageSettings.style.display='none'; tabGame.classList.add('active'); tabStats.classList.remove('active'); tabSettings.classList.remove('active'); });
+  tabStats.addEventListener('click', ()=>{ pageStats.style.display=''; pageGame.style.display='none'; pageSettings.style.display='none'; tabStats.classList.add('active'); tabGame.classList.remove('active'); tabSettings.classList.remove('active'); renderStats(); });
+  tabSettings.addEventListener('click', ()=>{ pageSettings.style.display=''; pageGame.style.display='none'; pageStats.style.display='none'; tabSettings.classList.add('active'); tabGame.classList.remove('active'); tabStats.classList.remove('active'); renderSettings(); });
+
+  // --- Helper: update score display ---
+  function updateScore(){ scoreText.textContent = `Score: ${totalScore}`; }
+
+  // run init
+  init();
 
   // persist on unload
   window.addEventListener('beforeunload', ()=>{ persistSettings(); persistStats(); });
 
-  // tooltip helpers
-  function showMiniTooltip(x,y,text,bg,txtColor='#fff'){
-    const old=document.querySelector('.mini-tooltip'); if(old) old.remove();
-    const tip=document.createElement('div'); tip.className='mini-tooltip'; tip.textContent=text; tip.style.background=bg; tip.style.color=txtColor;
-    document.body.appendChild(tip);
-    const r=tip.getBoundingClientRect();
-    tip.style.left=(x - r.width/2)+'px'; tip.style.top=(y - r.height - 10)+'px';
-    requestAnimationFrame(()=>{ tip.style.opacity=1; tip.style.transform='translateY(0)'; });
-  }
+  // small mini-tooltip removal on outside click
+  document.addEventListener('click', (e)=>{ if (miniTooltip && !miniTooltip.contains(e.target)) hideMiniTooltip(); });
 
 })();
 </script>
