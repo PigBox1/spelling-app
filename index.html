@@ -143,14 +143,27 @@ button,
 .btn-play i,
 .icon-btn i,
 .auto-btn i,
-
+.stats-wipe-btn i {
+  font-size: 18px;
+  color: inherit;
+  line-height: 1;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+  
 button:hover,
 .icon-btn:hover,
 .btn-play:hover,
 .segmented button:hover,
 .stats-wipe-btn:hover {
   background: rgba(0,0,0,0.03);
-  color: #111;
+  /* avoid forcing a new color here so icons keep currentColor behavior */
+}
+
+/* Slight pressed feedback */
+button:active,
+.icon-btn:active,
+.btn-play:active {
+  background: rgba(0,0,0,0.08);
 }
 
 .auto-btn:hover {
@@ -238,42 +251,40 @@ button[disabled],
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: var(--ui-border) solid var(--muted-2);
-  border-radius: var(--ui-radius);
+  border: var(--ui-border) solid var(--muted-2) !important;
+  border-radius: var(--ui-radius) !important;
   background: transparent !important;
-  color: var(--muted-2); /* grey matches outline */
+  color: var(--muted-2) !important;  /* idle icon color matches outline */
   cursor: pointer;
-  transition:
-    border-color 0.18s ease,
-    color 0.18s ease,
-    transform 0.12s ease;
+  box-shadow: none !important;
+  transition: border-color 0.18s ease, color 0.18s ease, transform 0.12s ease;
 }
 
-/* icon matches the button color exactly */
+/* icon follows button color precisely */
 .stats-wipe-btn i {
   font-size: 18px;
-  color: currentColor;
+  color: currentColor !important;
   line-height: 1;
   transition: color 0.15s ease, transform 0.12s ease;
 }
 
-/* hover: red accent for both icon + outline */
+/* hover/focus: force red for both border and icon */
 .stats-wipe-btn:hover,
-.stats-wipe-btn:focus {
+.stats-wipe-btn:focus,
+.stats-wipe-btn:focus-visible {
   background: transparent !important;
-  border-color: var(--accent-red);
-  color: var(--accent-red);
+  border-color: var(--accent-red) !important;
+  color: var(--accent-red) !important;
   outline: none !important;
+  box-shadow: none !important;
 }
 
-.stats-wipe-btn:hover i {
-  transform: scale(1.08);
-}
+.stats-wipe-btn:hover i { transform: scale(1.08); }
+.stats-wipe-btn:active i { transform: scale(1); }
 
-/* pressed down */
-.stats-wipe-btn:active i {
-  transform: scale(1);
-}
+/* safety: if <i> has inline styles, make it inherit currentColor */
+.stats-wipe-btn > i[style] { color: currentColor !important; }
+
 
 /* --- Hint / Result --- */
 .result {
@@ -519,6 +530,7 @@ button[disabled],
 }
 
 /* --- Responsive --- */
+/* --- Responsive --- */
 @media (max-width: 760px) {
   .card { padding: 14px; }
   .stat-right { width: 200px; }
@@ -528,9 +540,18 @@ button[disabled],
   .btn-play i,
   .icon-btn i,
   .auto-btn i,
+  .stats-wipe-btn i {
+    font-size: 18px;
+    line-height: 1;
+    color: inherit;
+    transition: transform 0.15s ease, color 0.15s ease;
+  }
   .btn-play:hover i,
   .icon-btn:hover i,
   .auto-btn:hover i,
+  .stats-wipe-btn:hover i {
+    transform: scale(1.08);
+  }
 }
 
 </style>
@@ -586,7 +607,7 @@ button[disabled],
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div class="small" id="statsSummary">Total: 0 | Accuracy: 0%</div>
             <div>
-              <button id="btnClearStats" class="btn small stats-wipe-btn" style="background:#f2f2f2;color:#333" type="button" title="Wipe statistics" aria-label="Wipe statistics">
+              <button id="btnClearStats" class="btn small stats-wipe-btn" type="button" title="Wipe statistics" aria-label="Wipe statistics">
                 <i class="fa-solid fa-trash" aria-hidden="true"></i>
               </button>
             </div>
