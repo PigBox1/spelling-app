@@ -58,7 +58,6 @@ header {
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 12px;
-  margin-bottom: 18px;
 }
 
 
@@ -547,17 +546,31 @@ button[disabled],
 
 .play-row {
   display: grid;
-  grid-template-columns: 1fr auto; /* same column layout as header */
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: 12px;
   margin-bottom: 20px;
   width: 100%;
+}
+.play-row .play-controls {
+  grid-column: 2;           /* put the wrapper into the right column */
+  display: flex;            /* lay out the inner controls horizontally */
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-start; /* left align inside that right-column area */
+  width: 100%;              /* allow input to occupy remaining space inside wrapper */
 }
 
 .play-row > * {
   grid-column: 2;
 }
 
+.play-row .play-controls input.word-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+}
+  
 .play-row input.word-input {
   width: 100%;
   flex: none;     /* ensure flex rules don't interfere (we're using grid) */
@@ -623,10 +636,13 @@ button[disabled],
         <!-- GAME -->
         <section id="pageGame">
           <div class="play-row" style="width:100%;">
-            <button id="btnPlay" class="btn-play" title="Play"><i class="fa-solid fa-play" style="font-size:14px"></i></button>
-            <input id="inputAnswer" class="word-input" placeholder="Type what you hear..." autocomplete="off" />
-            <div class="result" id="resultText" aria-live="polite"></div>
+            <div class="play-controls">
+              <button id="btnPlay" class="btn-play" title="Play">…</button>
+              <input id="inputAnswer" class="word-input" … />
+              <div class="result" id="resultText">…</div>
+            </div>
           </div>
+
 
           <!-- reused to show definition once round ends -->
           <div class="hint-line" id="hintLine" aria-hidden="true"></div>
