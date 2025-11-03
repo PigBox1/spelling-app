@@ -1,0 +1,22 @@
+{
+  "words": [
+    { "word": "abandon", "level": "easy" },
+    { "word": "bravery", "level": "easy" },
+    { "word": "elegant", "level": "easy" },
+    { "word": "harvest", "level": "easy" },
+    { "word": "journey", "level": "easy" },
+    { "word": "test", "level": "easy" },
+
+    { "word": "meticulous", "level": "advanced" },
+    { "word": "resilient", "level": "advanced" },
+    { "word": "transcendent", "level": "advanced" },
+    { "word": "alleviate", "level": "advanced" },
+    { "word": "benevolent", "level": "advanced" },
+
+    { "word": "juxtaposition", "level": "proficient" },
+    { "word": "idiosyncrasy", "level": "proficient" },
+    { "word": "ephemeral", "level": "proficient" },
+    { "word": "conscientious", "level": "proficient" },
+    { "word": "magnanimous", "level": "proficient" }
+  ]
+}

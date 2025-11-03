@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Spelling Trainer — Words JSON (Fixed)</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
+
+<style>
+:root{
+  --page-bg:#eceff1;
+  --card-bg:#fff;
+  --muted:#cfcfcf;
+  --accent-green:#4CAF50;
+  --accent-yellow:#FFC107;
+  --accent-red:#F44336;
+  --card-width:640px;
+  --shadow:0 10px 30px rgba(20,20,30,0.06);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+}
+html,body{height:100%;margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:var(--page-bg);color:#222}
+.wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:28px}
+.card{width:100%;max-width:var(--card-width);background:var(--card-bg);border-radius:18px;box-shadow:var(--shadow);padding:20px;box-sizing:border-box}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+header h1{font-size:18px;margin:0}
+nav{display:flex;gap:8px}
+nav button{border:none;background:transparent;padding:8px 12px;border-radius:10px;cursor:pointer;color:#555;font-weight:700}
+nav button.active{background:#dfe4e7;color:#111}
+
+/* top controls */
+.play-row { display:flex; gap:10px; align-items:stretch; justify-content:center; margin-bottom:8px; }
+.btn-play { display:inline-flex; align-items:center; justify-content:center; background:#d0d6d9; color:#fff; border-radius:12px; padding:0 12px; border:none; cursor:pointer; min-width:48px; height:44px; box-sizing:border-box; }
+.btn { background:#d0d6d9; color:#fff; border:none; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:700 }
+.btn.small { padding:8px 10px; min-width:84px }
+.btn:disabled { opacity:0.6; cursor:not-allowed }
+
+input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e6e6e6;font-size:16px;min-width:220px;box-sizing:border-box;height:44px}
+
+/* hint below input */
+.hint-line { margin-top:8px; font-family:var(--mono); color:#999; text-align:center; min-height:20px; transition:opacity .25s ease; }
+
+/* feedback bar */
+.feedback-wrap { width:100%; display:flex; justify-content:center; margin-top:8px }
+.feedback-bar { width:100%; display:flex; gap:10px; position:relative; align-items:center; padding:6px 0; }
+.segment { flex:1; height:14px; background:var(--muted); border-radius:10px; transition:background .22s ease, flex .22s ease, width .22s ease; position:relative; }
+.merged { position:absolute; height:14px; background:var(--accent-green); border-radius:10px; transition:left .22s ease, width .22s ease, opacity .22s ease; opacity:0; pointer-events:none; }
+
+/* controls / meta */
+.controls { display:flex; gap:10px; margin-top:12px; align-items:center; }
+.meta { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:12px }
+.result { font-weight:700; color:#444; min-width:0; flex:1; text-align:left }
+.score-area { position:relative; display:flex; align-items:center; gap:8px; min-width:110px; justify-content:flex-end }
+.score { font-weight:800; color:#222 }
+
+/* combo popup (floating +pts) */
+.combo { position:absolute; right:0; top:-32px; background:rgba(0,0,0,0.85); color:#fff; padding:6px 10px; border-radius:8px; font-weight:700; opacity:0; transform:translateY(6px) scale(.98); pointer-events:none }
+.combo.show { animation: comboPop .9s forwards cubic-bezier(.2,.9,.2,1) }
+@keyframes comboPop { 0%{opacity:0;transform:translateY(6px) scale(.98)}10%{opacity:1;transform:translateY(0) scale(1.03)}60%{opacity:1;transform:translateY(-18px) scale(1)}100%{opacity:0;transform:translateY(-36px) scale(.98)} }
+
+/* settings */
+.segmented { display:flex; gap:6px; background:transparent; border-radius:10px; padding:6px }
+.segmented button { background:transparent; border:none; padding:8px 10px; border-radius:8px; cursor:pointer; color:#666; font-weight:700 }
+.segmented button.on { background:#e6e9ea; color:#111 }
+
+/* stats list */
+.stats-list { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+.stat-row { display:flex; gap:12px; align-items:center; justify-content:space-between; padding:8px; border-radius:10px; background:#fbfbfb; border:1px solid #f0f0f0 }
+.stat-left { display:flex; align-items:center; gap:8px; flex:1; font-weight:600; }
+.stat-right { display:flex; align-items:center; gap:12px; width:300px; justify-content:flex-end; }
+
+/* mini bar */
+.mini-bar { display:flex; gap:6px; width:180px; height:12px; align-items:center; position:relative; }
+.mini-seg { flex:1; height:100%; border-radius:8px; transition:background .18s ease; background:var(--muted); position:relative; }
+
+/* tooltip */
+.mini-tooltip { position:fixed; z-index:9999; padding:6px 8px; border-radius:6px; color:#fff; font-weight:700; font-size:12px; white-space:pre-line; pointer-events:none; transform:translateY(-6px); opacity:0; transition:opacity .12s ease, transform .12s ease; }
+
+/* small text */
+.small { font-size:13px; color:#666 }
+
+/* responsive */
+@media (max-width:720px){
+  .card{padding:14px}
+  .stat-right{width:200px}
+}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="application" aria-label="Spelling trainer">
+      <header>
+        <h1>Spelling Trainer</h1>
+        <nav>
+          <button id="tabGame" type="button" class="active">Game</button>
+          <button id="tabStats" type="button">Stats</button>
+          <button id="tabSettings" type="button">Settings</button>
+        </nav>
+      </header>
+
+      <main>
+        <!-- GAME -->
+        <section id="pageGame">
+          <div class="play-row">
+            <button id="btnPlay" class="btn-play" title="Play"><i class="fa-solid fa-play" style="font-size:14px"></i></button>
+            <input id="inputAnswer" class="word-input" placeholder="Type what you hear..." autocomplete="off" />
+          </div>
+
+          <div class="hint-line" id="hintLine" aria-hidden="true"></div>
+
+          <div class="feedback-wrap">
+            <div class="feedback-bar" id="feedbackBar" aria-hidden="true">
+              <div class="merged" id="mergedBar"></div>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button id="btnCheck" class="btn" type="button">Check</button>
+            <button id="btnNext" class="btn" type="button">Next Word</button>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#444;margin-left:6px">
+              <input type="checkbox" id="autoNext" /> Auto Next
+            </label>
+          </div>
+
+          <div class="meta">
+            <div class="result" id="resultText">&nbsp;</div>
+            <div class="score-area">
+              <div id="combo" class="combo" aria-hidden="true"></div>
+              <div class="score" id="scoreText">Score: 0</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- STATS -->
+        <section id="pageStats" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="small" id="statsSummary">Total: 0 | Accuracy: 0%</div>
+            <div>
+              <button id="btnClearStats" class="btn small" style="background:#f2f2f2;color:#333" type="button">Clear</button>
+            </div>
+          </div>
+          <div class="stats-list" id="statsList"></div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section id="pageSettings" style="display:none">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div>
+              <div class="small">Difficulty</div>
+              <div class="segmented" id="segDifficulty">
+                <button data-val="easy" type="button">Easy</button>
+                <button data-val="advanced" type="button">Advanced</button>
+                <button data-val="proficient" type="button">Proficient</button>
+              </div>
+            </div>
+            <div>
+              <div class="small">Mode</div>
+              <div class="segmented" id="segMode">
+                <button data-val="normal" type="button">Normal</button>
+                <button data-val="easy" type="button">Easy (hints, 5 attempts)</button>
+              </div>
+            </div>
+            <div><div class="small">Word source</div><div class="small" style="color:#666">Tries external <code>words.json</code> first, then falls back to embedded list.</div></div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+<!-- embedded fallback word list -->
+<script id="embeddedWords" type="application/json">
+{
+  "words": [
+    {"word":"abandon","level":"easy"},
+    {"word":"bravery","level":"easy"},
+    {"word":"elegant","level":"easy"},
+    {"word":"harvest","level":"easy"},
+    {"word":"journey","level":"easy"},
+    {"word":"meticulous","level":"advanced"},
+    {"word":"resilient","level":"advanced"},
+    {"word":"transcendent","level":"advanced"},
+    {"word":"alleviate","level":"advanced"},
+    {"word":"benevolent","level":"advanced"},
+    {"word":"juxtaposition","level":"proficient"},
+    {"word":"idiosyncrasy","level":"proficient"},
+    {"word":"ephemeral","level":"proficient"},
+    {"word":"conscientious","level":"proficient"},
+    {"word":"magnanimous","level":"proficient"}
+  ]
+}
+</script>
+
+<script>
+(() => {
+  // ---------- Tabs (robust) ----------
+  const tabGame = document.getElementById('tabGame');
+  const tabStats = document.getElementById('tabStats');
+  const tabSettings = document.getElementById('tabSettings');
+  const pageGame = document.getElementById('pageGame');
+  const pageStats = document.getElementById('pageStats');
+  const pageSettings = document.getElementById('pageSettings');
+
+  function switchTab(tab){
+    pageGame.style.display='none'; pageStats.style.display='none'; pageSettings.style.display='none';
+    tabGame.classList.remove('active'); tabStats.classList.remove('active'); tabSettings.classList.remove('active');
+    if (tab==='game'){ pageGame.style.display=''; tabGame.classList.add('active'); }
+    if (tab==='stats'){ pageStats.style.display=''; tabStats.classList.add('active'); renderStats(); }
+    if (tab==='settings'){ pageSettings.style.display=''; tabSettings.classList.add('active'); renderSettings(); }
+  }
+  tabGame.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); switchTab('game'); });
+  tabStats.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); switchTab('stats'); });
+  tabSettings.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); switchTab('settings'); });
+
+  // ---------- App refs ----------
+  const btnPlay = document.getElementById('btnPlay');
+  const btnCheck = document.getElementById('btnCheck');
+  const btnNext = document.getElementById('btnNext');
+  const inputAnswer = document.getElementById('inputAnswer');
+  const hintLine = document.getElementById('hintLine');
+  const feedbackBar = document.getElementById('feedbackBar');
+  const mergedBar = document.getElementById('mergedBar');
+  const resultText = document.getElementById('resultText');
+  const comboEl = document.getElementById('combo');
+  const scoreText = document.getElementById('scoreText');
+  const autoNextCheckbox = document.getElementById('autoNext');
+
+  const statsList = document.getElementById('statsList');
+  const statsSummary = document.getElementById('statsSummary');
+  const btnClearStats = document.getElementById('btnClearStats');
+  const segDifficulty = document.getElementById('segDifficulty');
+  const segMode = document.getElementById('segMode');
+
+  // ---------- State ----------
+  let wordPool = [];
+  let queues = {easy:[],advanced:[],proficient:[]};
+  let currentWord = null;
+  let lastSubmitted = null;
+  let roundStart = 0;
+  let attemptsThisRound = [];
+  let segEls = [];
+  let roundEnded = false;
+  let totalScore = 0;
+  let autoNextTimer = null;
+
+  let stats = JSON.parse(localStorage.getItem('spelling_stats') || '[]');
+  const defaultSettings = { autoNext:false, difficulty:'proficient', mode:'normal' };
+  let settings = Object.assign({}, defaultSettings, JSON.parse(localStorage.getItem('spelling_settings') || '{}'));
+
+  // ---------- Colors ----------
+  const COLOR_NEUTRAL = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#cfcfcf';
+  const COLOR_GREEN = getComputedStyle(document.documentElement).getPropertyValue('--accent-green').trim() || '#4CAF50';
+  const COLOR_YELLOW = getComputedStyle(document.documentElement).getPropertyValue('--accent-yellow').trim() || '#FFC107';
+  const COLOR_RED = getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim() || '#F44336';
+
+  // ---------- Utils ----------
+  const persistSettings = () => localStorage.setItem('spelling_settings', JSON.stringify(settings));
+  const persistStats = () => localStorage.setItem('spelling_stats', JSON.stringify(stats));
+  const capitalize = s => (!s ? s : s[0].toUpperCase()+s.slice(1));
+  const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+  const escapeHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // ---------- Load words (external first, fallback to embedded) ----------
+async function loadWords(){
+  wordPool = [];
+
+  // helper: fetch a filename and return { ok, status, text, json, error }
+  async function tryFetchFile(name){
+    try {
+      console.info(`Attempting to fetch "${name}" (protocol: ${location.protocol})`);
+      // If serving via file:// many browsers block fetch -> still try but catch errors
+      const res = await fetch(name, { cache: 'no-store' });
+      const text = await res.text();
+      let parsed = null;
+      try { parsed = JSON.parse(text); } catch(parseErr) { /* leave parsed null */ }
+      return { ok: res.ok, status: res.status, text, json: parsed, url: name };
+    } catch (err){
+      return { ok: false, status: null, text: null, json: null, error: err, url: name };
+    }
+  }
+
+  // Try a list of candidate filenames (your file name + common alternatives)
+  const candidates = ['wordslist.json', 'words.json', 'words-list.json'];
+  let fileResult = null;
+  for (const name of candidates){
+    fileResult = await tryFetchFile(name);
+    if (fileResult.ok && fileResult.json) {
+      console.info(`Successfully fetched & parsed JSON from "${name}".`);
+      break;
+    }
+    if (fileResult.ok && !fileResult.json) {
+      console.warn(`Fetched "${name}" (HTTP ${fileResult.status}) but JSON.parse failed. File text (first 500 chars):\n`, fileResult.text && fileResult.text.slice(0,500));
+      // stop here (we found a file but it's invalid JSON)
+      break;
+    }
+    if (!fileResult.ok && fileResult.status !== null) {
+      console.warn(`Fetch for "${name}" returned HTTP ${fileResult.status}.`);
+    } else if (fileResult.error) {
+      console.warn(`Fetch for "${name}" failed:`, fileResult.error);
+    }
+    fileResult = null;
+  }
+
+  // If fileResult has usable json, normalise it
+  if (fileResult && fileResult.json){
+    const json = fileResult.json;
+    // Accept either { words: [...] } or an array directly
+    let arr = [];
+    if (Array.isArray(json)) arr = json;
+    else if (json && Array.isArray(json.words)) arr = json.words;
+    else {
+      console.warn('Remote JSON loaded but shape is unexpected (not array or { words: [...] }). JSON root keys:', Object.keys(json || {}));
+    }
+
+    // Normalize entries
+    arr = arr.map(it => {
+      if (!it) return null;
+      if (typeof it === 'string') return { word: it.toLowerCase(), level: 'easy' };
+      const w = it.word ? String(it.word).toLowerCase() : null;
+      const level = it.level ? String(it.level).toLowerCase() : 'easy';
+      if (!w) return null;
+      return { word: w, level };
+    }).filter(Boolean);
+
+    if (arr.length){
+      wordPool = arr;
+      console.info(`Loaded ${arr.length} valid words from "${fileResult.url}".`);
+    } else {
+      console.warn(`JSON file "${fileResult.url}" parsed but contained no valid entries after normalization.`);
+    }
+  }
+
+  // If we still have no words, fall back to embedded
+  if (!wordPool.length){
+    try {
+      const embedded = JSON.parse(document.getElementById('embeddedWords').textContent);
+      const arr = (Array.isArray(embedded) ? embedded : embedded.words) || [];
+      const normalized = arr.map(it => {
+        if (!it) return null;
+        if (typeof it === 'string') return { word: it.toLowerCase(), level: 'easy' };
+        const w = it.word ? String(it.word).toLowerCase() : null;
+        const level = it.level ? String(it.level).toLowerCase() : 'easy';
+        if (!w) return null; return { word: w, level };
+      }).filter(Boolean);
+      if (normalized.length){
+        wordPool = normalized;
+        console.info(`Using embedded word list (${normalized.length} items).`);
+      } else {
+        console.error('Embedded word list parsed but had no valid entries.');
+      }
+    } catch (err){
+      console.error('Failed to parse embeddedWords JSON (this should not happen):', err);
+    }
+  }
+
+  // Final safety: if still empty, load tiny fallback so app doesn't crash
+  if (!wordPool.length){
+    console.error('No words available (external and embedded both failed). Loading tiny fallback list so app stays usable.');
+    wordPool = [
+      { word: 'genuine', level: 'easy' },
+      { word: 'resilient', level: 'advanced' },
+      { word: 'ubiquitous', level: 'proficient' }
+    ];
+  }
+
+  // Build level queues
+  ['easy','advanced','proficient'].forEach(l=>{
+    const list = wordPool.filter(w => w.level === l).slice();
+    queues[l] = shuffle(list);
+    console.info(`Queue for ${l}: ${queues[l].length} items.`);
+  });
+
+  console.info('loadWords() complete. wordPool size:', wordPool.length);
+}
+
+  function pickWordForDifficulty(level){
+    const q = queues[level] || [];
+    if (!q.length){
+      const refill = wordPool.filter(w => w.level===level);
+      queues[level] = shuffle(refill.slice());
+    }
+    const item = queues[level].shift() || wordPool.find(w=>w.level===level) || wordPool[0];
+    return item.word;
+  }
+
+  // ---------- Segments ----------
+  function renderSegments(){
+    feedbackBar.innerHTML='';
+    const segCount = (settings.mode==='easy') ? 5 : 3;
+    for (let i=0;i<segCount;i++){
+      const d=document.createElement('div');
+      d.className='segment';
+      d.style.background=COLOR_NEUTRAL;
+      d.dataset.index=i;
+      feedbackBar.appendChild(d);
+    }
+    feedbackBar.appendChild(mergedBar);
+    segEls = Array.from(feedbackBar.querySelectorAll('.segment'));
+    mergedBar.style.opacity=0; mergedBar.style.left='0px'; mergedBar.style.width='0px';
+  }
+  function resetSegments(){ segEls.forEach(s=>{ s.style.background=COLOR_NEUTRAL; s.style.visibility='visible'; }); mergedBar.style.opacity=0; mergedBar.style.left='0px'; mergedBar.style.width='0px'; }
+  function colorSegment(i,c){ if (i<0||i>=segEls.length) return; segEls[i].style.background=c; }
+  function colorAllSegments(c){ segEls.forEach(s=> s.style.background=c); }
+
+  // ---------- Similarity / scoring ----------
+  function levenshtein(a,b){
+    a=a||''; b=b||''; const al=a.length, bl=b.length; if(!al) return bl; if(!bl) return al;
+    const dp=Array(al+1).fill().map(()=>Array(bl+1).fill(0));
+    for(let i=0;i<=al;i++) dp[i][0]=i;
+    for(let j=0;j<=bl;j++) dp[0][j]=j;
+    for(let i=1;i<=al;i++) for(let j=1;j<=bl;j++){
+      const cost=a[i-1]===b[j-1]?0:1;
+      dp[i][j]=Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost);
+    }
+    return dp[al][bl];
+  }
+  function similarityRatio(a,b){ if(!a&&!b) return 1; const d=levenshtein(a||'',b||''); return 1 - d/Math.max((a||'').length,(b||'').length||1); }
+  function complexityInfo(w){ const len=(w||'').length; if(len<6) return {label:'Easy',mult:1}; if(len<=9) return {label:'Advanced',mult:1.25}; return {label:'Proficient',mult:1.5}; }
+  function computePoints(correctness, word, secs){ const comp=complexityInfo(word).mult; const timeBonus=Math.max(0.5,Math.min(1.5,5/Math.max(secs,0.2))); return Math.round(10*correctness*comp*timeBonus); }
+
+  // ---------- UI helpers ----------
+  function showResult(text,color='#444'){ resultText.textContent=text; resultText.style.color=color; }
+  function updateScore(){ scoreText.textContent=`Score: ${totalScore}`; }
+  function showFloating(points,type){
+    comboEl.textContent = (points>0?`+${points} pts`:'+0 pts');
+    comboEl.style.background = (type==='green'?COLOR_GREEN:type==='yellow'?COLOR_YELLOW:COLOR_RED);
+    comboEl.classList.remove('show'); void comboEl.offsetWidth; comboEl.classList.add('show');
+    setTimeout(()=>{ comboEl.classList.remove('show'); comboEl.style.background=''; }, 1000);
+  }
+  function speak(word){ if(!word) return; const u=new SpeechSynthesisUtterance(word); u.rate=0.95; speechSynthesis.cancel(); speechSynthesis.speak(u); }
+  function mergeRemainingIntoGreen(usedCount){
+    if(!segEls.length) return;
+    const barRect=feedbackBar.getBoundingClientRect();
+    const firstRemaining=Math.min(usedCount,segEls.length-1);
+    const remain=Math.max(1, segEls.length-usedCount);
+    const startSeg=segEls[firstRemaining].getBoundingClientRect();
+    const endIndex=Math.min(segEls.length-1, firstRemaining+remain-1);
+    const endSeg=segEls[endIndex].getBoundingClientRect();
+    const left=startSeg.left-barRect.left;
+    const right=endSeg.right-barRect.left;
+    mergedBar.style.left=`${left}px`; mergedBar.style.width=`${Math.max(8,right-left)}px`; mergedBar.style.opacity=1;
+    for(let i=firstRemaining;i<=endIndex;i++) segEls[i].style.background='transparent';
+  }
+
+  // ---------- Easy mode reveal below input ----------
+  function updateRevealHint(){
+    if (settings.mode!=='easy' || !currentWord){ hintLine.textContent=''; return; }
+    const total=5;
+    const usedWrong = attemptsThisRound.filter(a=>a.outcome!=='correct').length;
+    const revealPercent = Math.min(100, Math.ceil((usedWrong/total)*100));
+    const n = Math.floor((revealPercent/100)*currentWord.length);
+    const visible=currentWord.slice(0,n), hidden=currentWord.slice(n);
+    if (n >= currentWord.length){
+      hintLine.innerHTML = `<span style="color:${COLOR_GREEN};opacity:1">${escapeHtml(currentWord)}</span>`;
+    } else {
+      hintLine.innerHTML = `<span style="color:#888">${escapeHtml(visible)}</span><span style="color:#bbb">${'•'.repeat(Math.max(1,hidden.length))}</span>`;
+    }
+  }
+
+  // ---------- Round control ----------
+  async function startNewRound(manual=false){
+    if (manual && autoNextTimer){ clearTimeout(autoNextTimer); autoNextTimer=null; }
+
+    // save incomplete with partial award
+    if (!roundEnded && attemptsThisRound.length>0){
+      let best=0; attemptsThisRound.forEach(a=>{ if(a.outcome==='correct') best=Math.max(best,1); else if(a.outcome==='almost') best=Math.max(best,0.6); });
+      const used = attemptsThisRound.length;
+      let mult=0;
+      if (settings.mode==='easy'){ mult = ({1:0.5,2:0.3,3:0.2,4:0.1})[used] || 0; }
+      else { mult = (used===1?0.3 : used===2?0.1 : 0); }
+      const secs=Math.max(0.01,(performance.now()-roundStart)/1000);
+      const base=computePoints(best,currentWord,secs);
+      const awarded=Math.round(base*mult);
+      if (awarded>0){ totalScore+=awarded; updateScore(); showFloating(awarded, best===1?'green':best>=0.6?'yellow':'red'); }
+      stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: awarded, correct: best===1, incomplete:true, mode: settings.mode });
+      persistStats();
+    }
+
+    // reset
+    lastSubmitted=null; attemptsThisRound=[]; roundEnded=false;
+    renderSegments(); resetSegments();
+    inputAnswer.value=''; inputAnswer.disabled=false; btnCheck.disabled=false;
+    showResult('', '#444'); hintLine.textContent='';
+
+    // pick word
+    const level=settings.difficulty||'proficient';
+    currentWord = pickWordForDifficulty(level);
+    roundStart=performance.now();
+
+    // initial hint (small) for easy mode
+    if (settings.mode==='easy'){
+      const reveal = Math.min(1, Math.ceil(currentWord.length*0.05));
+      hintLine.innerHTML = `<span style="color:#888">${escapeHtml(currentWord.slice(0,reveal))}</span>${'•'.repeat(Math.max(1,currentWord.length-reveal))}`;
+      hintLine.style.opacity=1;
+    } else {
+      hintLine.textContent='';
+    }
+
+    setTimeout(()=>{ speak(currentWord); showResult('Word ready — listening...', '#666'); }, 320);
+    setTimeout(()=> inputAnswer.focus(), 700);
+  }
+
+  function easyAttemptMultiplier(n){ return ({1:1,2:0.8,3:0.6,4:0.4,5:0.2})[n] || 0; }
+
+  function onCheck(){
+    if(!currentWord) return;
+    const raw=(inputAnswer.value||'').trim().toLowerCase();
+    if(!raw) return;
+
+    if (lastSubmitted!==null && raw===lastSubmitted){
+      showResult('You already tried that answer!', '#999');
+      inputAnswer.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}], {duration:220});
+      return;
+    }
+    lastSubmitted=raw;
+
+    const exact = raw===currentWord;
+    const sim = similarityRatio(raw,currentWord);
+    let correctness=0, outcome='wrong';
+    if (exact){ correctness=1; outcome='correct'; }
+    else if (sim>=0.75){ correctness=0.6; outcome='almost'; }
+
+    attemptsThisRound.push({value:raw, outcome});
+    const idx = attemptsThisRound.length-1;
+
+    if (outcome==='correct'){
+      const usedBefore = attemptsThisRound.length-1;
+      mergeRemainingIntoGreen(usedBefore);
+    } else {
+      colorSegment(idx, outcome==='almost'?COLOR_YELLOW:COLOR_RED);
+      if (settings.mode==='easy') inputAnswer.value='';
+    }
+
+    if (settings.mode==='easy') updateRevealHint();
+
+    const secs=Math.max(0.01,(performance.now()-roundStart)/1000);
+    let pts=0;
+    if (outcome==='correct'){
+      if (settings.mode==='easy'){ pts = Math.round(computePoints(1,currentWord,secs)*easyAttemptMultiplier(attemptsThisRound.length)); }
+      else { pts = computePoints(1,currentWord,secs); }
+      totalScore+=pts; updateScore(); showFloating(pts,'green');
+    } else if (outcome==='almost'){
+      if (settings.mode==='easy'){ pts = Math.round(computePoints(0.6,currentWord,secs)*easyAttemptMultiplier(attemptsThisRound.length)); }
+      else { pts = computePoints(0.6,currentWord,secs); }
+      totalScore+=pts; updateScore(); showFloating(pts,'yellow');
+    } else {
+      showFloating(0,'red');
+    }
+
+    if (outcome==='correct'){
+      roundEnded=true; inputAnswer.disabled=true; btnCheck.disabled=true;
+      stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: pts, correct:true, incomplete:false, mode: settings.mode });
+      persistStats();
+      if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer=setTimeout(()=>{ startNewRound(false); autoNextTimer=null; }, 3000); }
+    } else {
+      if (settings.mode==='easy'){
+        if (attemptsThisRound.length>=5){
+          roundEnded=true; inputAnswer.disabled=true; btnCheck.disabled=true;
+          showResult(`Out — the word was "${currentWord}".`, COLOR_RED);
+          colorAllSegments(COLOR_RED);
+          stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: 0, correct:false, incomplete:false, mode: settings.mode });
+          persistStats();
+          if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer=setTimeout(()=>{ startNewRound(false); autoNextTimer=null; }, 3000); }
+        }
+      } else {
+        if (attemptsThisRound.length>=3){
+          roundEnded=true; inputAnswer.disabled=true; btnCheck.disabled=true;
+          showResult(`Out — the word was "${currentWord}".`, COLOR_RED);
+          colorAllSegments(COLOR_RED);
+          stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: 0, correct:false, incomplete:false, mode: settings.mode });
+          persistStats();
+          if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer=setTimeout(()=>{ startNewRound(false); autoNextTimer=null; }, 3000); }
+        } else {
+          inputAnswer.value=''; inputAnswer.focus();
+        }
+      }
+    }
+  }
+
+  // ---------- Stats ----------
+  function renderStats(){
+    statsList.innerHTML='';
+    const total=stats.length;
+    const correct=stats.filter(s=>s.correct).length;
+    const acc= total? Math.round(1000*(correct/total))/10 : 0;
+    statsSummary.textContent=`Total: ${total} | Accuracy: ${acc}%`;
+
+    stats.slice().reverse().forEach(s=>{
+      const row=document.createElement('div'); row.className='stat-row';
+      const left=document.createElement('div'); left.className='stat-left';
+      const title=document.createElement('div'); title.textContent=s.word; title.style.fontWeight='700';
+      left.appendChild(title);
+      if (s.mode==='easy'){ const icon=document.createElement('i'); icon.className='fa-solid fa-feather'; icon.style.color='#7aa'; icon.style.fontSize='14px'; left.appendChild(icon); }
+
+      const right=document.createElement('div'); right.className='stat-right';
+      const segCount=(s.mode==='easy')?5:3;
+      const mini=document.createElement('div'); mini.className='mini-bar';
+
+      for (let i=0;i<segCount;i++){
+        const ms=document.createElement('div'); ms.className='mini-seg'; ms.style.background=COLOR_NEUTRAL;
+        if (i < s.attempts.length){
+          const a=s.attempts[i];
+          if (a.outcome==='correct') ms.style.background=COLOR_GREEN;
+          else if (a.outcome==='almost') ms.style.background=COLOR_YELLOW;
+          else ms.style.background=COLOR_RED;
+          ms.addEventListener('mouseenter', ev=>{
+            const r=ev.target.getBoundingClientRect();
+            const text=`${capitalize(a.outcome)}: ${a.value}`;
+            const bg=a.outcome==='correct'?COLOR_GREEN:(a.outcome==='almost'?COLOR_YELLOW:COLOR_RED);
+            const txt=(a.outcome==='almost'?'#111':'#fff');
+            showMiniTooltip(r.left+r.width/2, r.top, text, bg, txt);
+          });
+          ms.addEventListener('mouseleave', ()=>{ const tt=document.querySelector('.mini-tooltip'); if(tt) tt.remove(); });
+        }
+        mini.appendChild(ms);
+      }
+      const pts=document.createElement('div'); pts.style.minWidth='64px'; pts.style.textAlign='right'; pts.style.fontWeight='700'; pts.textContent=`${s.points} pts`;
+      right.appendChild(mini); right.appendChild(pts);
+      row.appendChild(left); row.appendChild(right);
+      statsList.appendChild(row);
+    });
+  }
+
+  // ---------- Settings ----------
+  function renderSettings(){
+    Array.from(segDifficulty.querySelectorAll('button')).forEach(b=> b.classList.toggle('on', b.dataset.val===settings.difficulty));
+    Array.from(segMode.querySelectorAll('button')).forEach(b=> b.classList.toggle('on', b.dataset.val===settings.mode));
+    autoNextCheckbox.checked=!!settings.autoNext;
+  }
+  segDifficulty.addEventListener('click', e=>{ if(e.target.tagName!=='BUTTON') return; settings.difficulty=e.target.dataset.val; persistSettings(); renderSettings(); startNewRound(false); });
+  segMode.addEventListener('click', e=>{ if(e.target.tagName!=='BUTTON') return; settings.mode=e.target.dataset.val; persistSettings(); renderSettings(); renderSegments(); startNewRound(false); });
+  autoNextCheckbox.addEventListener('change', e=>{ settings.autoNext=e.target.checked; persistSettings(); });
+
+  // ---------- Events ----------
+  btnPlay.addEventListener('click', ()=>{ if(currentWord) speak(currentWord); });
+  btnNext.addEventListener('click', ()=>{ if(autoNextTimer){ clearTimeout(autoNextTimer); autoNextTimer=null; } startNewRound(true); });
+  btnCheck.addEventListener('click', onCheck);
+  inputAnswer.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); onCheck(); } });
+
+  btnClearStats.addEventListener('click', ()=>{ if(!confirm('Clear statistics?')) return; stats=[]; persistStats(); renderStats(); });
+
+  // ---------- Init ----------
+  (async function init(){
+    await loadWords();
+    renderSettings(); renderStats(); renderSegments();
+    updateScore();
+    startNewRound(false);
+  })();
+
+  // persist on unload
+  window.addEventListener('beforeunload', ()=>{ persistSettings(); persistStats(); });
+
+  // tooltip helpers
+  function showMiniTooltip(x,y,text,bg,txtColor='#fff'){
+    const old=document.querySelector('.mini-tooltip'); if(old) old.remove();
+    const tip=document.createElement('div'); tip.className='mini-tooltip'; tip.textContent=text; tip.style.background=bg; tip.style.color=txtColor;
+    document.body.appendChild(tip);
+    const r=tip.getBoundingClientRect();
+    tip.style.left=(x - r.width/2)+'px'; tip.style.top=(y - r.height - 10)+'px';
+    requestAnimationFrame(()=>{ tip.style.opacity=1; tip.style.transform='translateY(0)'; });
+  }
+
+})();
+</script>
+</body>
+</html>
