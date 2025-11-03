@@ -17,6 +17,10 @@
   --card-width: 760px;
   --shadow: 0 10px 30px rgba(20,20,30,0.06);
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+
+  /* Unified UI metrics */
+  --ui-radius: 12px;
+  --ui-border: 2px;
   --main-icon-size: 48px;
 }
 
@@ -41,12 +45,13 @@ html, body {
   width: 100%;
   max-width: var(--card-width);
   background: var(--card-bg);
-  border-radius: 18px;
+  border-radius: var(--ui-radius);
   box-shadow: var(--shadow);
   padding: 20px;
   box-sizing: border-box;
 }
 
+/* --- Header & Navigation --- */
 header {
   display: flex;
   align-items: center;
@@ -64,69 +69,65 @@ nav {
   gap: 8px;
 }
 
-/* --- Top navigation buttons (Tabs) --- */
+/* Transparent tab style to match new vibe */
 nav button {
   background: transparent;
-  border: 2px solid var(--muted-2);
+  border: var(--ui-border) solid var(--muted-2);
+  border-radius: var(--ui-radius);
   color: var(--muted-2);
-  padding: 8px 14px;
-  border-radius: 12px;
-  cursor: pointer;
   font-weight: 700;
+  padding: 8px 14px;
+  cursor: pointer;
   transition: all 0.25s ease;
 }
 
 nav button:hover {
   background: rgba(0,0,0,0.03);
   color: #111;
-  filter: brightness(1.05);
 }
 
-/* Active tab */
 nav button.active {
   border-color: var(--accent-green);
   color: var(--accent-green);
   background: rgba(76,175,80,0.08);
 }
 
-
-/* --- Text Input --- */
+/* --- Input Fields --- */
 input.word-input {
   flex: 1;
   padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid #e6e6e6;
+  border-radius: var(--ui-radius);
+  border: var(--ui-border) solid var(--muted-2);
   font-size: 16px;
   min-width: 220px;
   box-sizing: border-box;
   height: 44px;
+  background: transparent;
+  color: #111;
+  transition: all 0.25s ease;
 }
 
-/* --- Play Row --- */
-.play-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
+input.word-input:focus {
+  outline: none;
+  border-color: var(--accent-green);
 }
 
-/* --- Unified Transparent Buttons --- */
+/* --- Universal Button Reset --- */
 button,
 .icon-btn,
 .btn-play,
 .auto-btn,
 .segmented button,
 .stats-wipe-btn {
+  border-radius: var(--ui-radius);
+  border: var(--ui-border) solid var(--muted-2);
   background: transparent;
-  border: 2px solid var(--muted-2);
   color: var(--muted-2);
-  border-radius: 12px;
-  transition: all 0.2s ease;
   cursor: pointer;
+  transition: all 0.25s ease;
 }
 
-/* --- Square Main Icon Buttons --- */
+/* --- Icon Buttons (Main Game Controls) --- */
 .btn-play,
 .icon-btn,
 .auto-btn {
@@ -144,11 +145,10 @@ button,
 .auto-btn i,
 .stats-wipe-btn i {
   font-size: 18px;
-  line-height: 1;
   color: inherit;
+  line-height: 1;
 }
 
-/* --- Button Hover/Active --- */
 button:hover,
 .icon-btn:hover,
 .btn-play:hover,
@@ -157,7 +157,6 @@ button:hover,
 .stats-wipe-btn:hover {
   background: rgba(0,0,0,0.03);
   color: #111;
-  filter: brightness(1.05);
 }
 
 button:active,
@@ -166,7 +165,6 @@ button:active,
   background: rgba(0,0,0,0.08);
 }
 
-/* Disabled */
 button[disabled],
 .icon-btn[disabled],
 .btn-play[disabled],
@@ -175,50 +173,43 @@ button[disabled],
   cursor: not-allowed;
 }
 
-/* --- Toggle & Active States --- */
+/* --- Toggle / Active States --- */
 .segmented button.on {
   border-color: var(--accent-green);
   color: var(--accent-green);
   background: rgba(76,175,80,0.08);
 }
 
-.segmented button[data-val="easy"].on {
-  border-color: var(--accent-greem);
-  color: var(--accent-green);
-  background: rgba(255,193,7,0.08);
-}
-
-.segmented button[data-val="normal"].on {
-  border-color: var(--accent-yellow);
-  color: var(--accent-yellow);
-  background: rgba(255,193,7,0.08);
-}
-
-.segmented button[data-val="hardcore"].on {
-  border-color: var(--accent-red);
-  color: var(--accent-red);
-  background: rgba(244,67,54,0.08);
-}
-
-/* Difficulty colors */
+/* Difficulty color coding */
 .segmented button[data-val="easy"].on {
   border-color: var(--accent-green);
   color: var(--accent-green);
   background: rgba(76,175,80,0.08);
 }
-
 .segmented button[data-val="advanced"].on {
   border-color: var(--accent-yellow);
   color: var(--accent-yellow);
   background: rgba(255,193,7,0.08);
 }
-
 .segmented button[data-val="proficient"].on {
   border-color: var(--accent-red);
   color: var(--accent-red);
   background: rgba(244,67,54,0.08);
 }
-  
+
+/* Mode color coding */
+.segmented button[data-val="hardcore"].on {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+  background: rgba(244,67,54,0.08);
+}
+.segmented button[data-val="easy"].on[data-group="mode"] {
+  border-color: var(--accent-yellow);
+  color: var(--accent-yellow);
+  background: rgba(255,193,7,0.08);
+}
+
+/* Auto Next toggle */
 .auto-btn.checked {
   border-color: var(--accent-green);
   color: var(--accent-green);
@@ -235,13 +226,18 @@ button[disabled],
   justify-content: center;
 }
 
+.stats-wipe-btn:hover {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
 .stats-wipe-btn:hover i {
-  color: var(--accent-red) !important;
+  color: var(--accent-red);
   transform: scale(1.08);
   transition: color 0.15s ease, transform 0.15s ease;
 }
 
-/* --- Result Text --- */
+/* --- Hint / Result --- */
 .result {
   font-weight: 700;
   color: #444;
@@ -249,7 +245,6 @@ button[disabled],
   text-align: center;
 }
 
-/* --- Hint Line --- */
 .hint-line {
   margin-top: 8px;
   font-family: var(--mono);
@@ -280,7 +275,7 @@ button[disabled],
   flex: 1;
   height: 14px;
   background: var(--muted);
-  border-radius: 10px;
+  border-radius: var(--ui-radius);
   transition: background 0.22s ease, flex 0.22s ease, width 0.22s ease;
   position: relative;
 }
@@ -289,13 +284,13 @@ button[disabled],
   position: absolute;
   height: 14px;
   background: var(--accent-green);
-  border-radius: 10px;
+  border-radius: var(--ui-radius);
   transition: left 0.22s ease, width 0.22s ease, opacity 0.22s ease;
   opacity: 0;
   pointer-events: none;
 }
 
-/* --- Controls Section --- */
+/* --- Controls --- */
 .controls {
   display: flex;
   gap: 10px;
@@ -322,18 +317,19 @@ button[disabled],
   display: flex;
   gap: 6px;
   background: transparent;
-  border-radius: 10px;
+  border-radius: var(--ui-radius);
   padding: 6px;
+  justify-content: space-between;
 }
 
 .segmented button {
-  background: transparent;
-  border: 2px solid var(--muted-2);
-  border-radius: 8px;
+  flex: 1;
+  border: var(--ui-border) solid var(--muted-2);
+  border-radius: var(--ui-radius);
   color: #666;
   font-weight: 700;
-  position: relative;
   padding: 8px 10px;
+  background: transparent;
 }
 
 /* --- Settings Rows --- */
@@ -357,18 +353,25 @@ button[disabled],
   gap: 8px;
 }
 
-/* --- Select Box --- */
+/* --- Select --- */
 .select {
   padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid #e6e6e6;
-  background: #fff;
+  border-radius: var(--ui-radius);
+  border: var(--ui-border) solid var(--muted-2);
+  background: transparent;
   font-size: 14px;
   width: 100%;
   box-sizing: border-box;
+  color: #111;
+  transition: all 0.25s ease;
 }
 
-/* --- Stats --- */
+.select:focus {
+  border-color: var(--accent-green);
+  outline: none;
+}
+
+/* --- Stats Section --- */
 .stats-list {
   display: flex;
   flex-direction: column;
@@ -382,9 +385,9 @@ button[disabled],
   align-items: center;
   justify-content: space-between;
   padding: 8px;
-  border-radius: 10px;
+  border-radius: var(--ui-radius);
   background: #fbfbfb;
-  border: 1px solid #f0f0f0;
+  border: var(--ui-border) solid #f0f0f0;
 }
 
 .stat-left {
@@ -403,7 +406,7 @@ button[disabled],
   justify-content: flex-end;
 }
 
-/* --- Mini Progress Bars in Stats --- */
+/* --- Mini Stats Bars --- */
 .mini-bar {
   display: flex;
   gap: 6px;
@@ -416,7 +419,7 @@ button[disabled],
 .mini-seg {
   flex: 1;
   height: 100%;
-  border-radius: 8px;
+  border-radius: var(--ui-radius);
   background: var(--muted);
   position: relative;
   transition: background 0.18s ease;
@@ -446,7 +449,7 @@ button[disabled],
 
 .play-row { gap: 12px; }
 
-/* --- Responsive Adjustments --- */
+/* --- Responsive --- */
 @media (max-width: 760px) {
   .card { padding: 14px; }
   .stat-right { width: 200px; }
@@ -457,7 +460,8 @@ button[disabled],
   .icon-btn i,
   .auto-btn i,
   .stats-wipe-btn i { font-size: 16px; }
-} 
+}
+
 </style>
 </head>
 <body>
