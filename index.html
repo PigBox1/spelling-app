@@ -391,15 +391,14 @@ button[disabled],
 /* --- Segmented Controls --- */
 .segmented {
   display: flex;
-  justify-content: flex-start;
   gap: 12px;
   border-radius: var(--ui-radius);
-  padding: 6px 0;
+  padding: 0;                 /* remove extra vertical padding that was shifting alignment */
   background: transparent;
-  margin-bottom: 20px;
   align-items: center;
-  flex-wrap: nowrap;          /* prevent the group from wrapping to multiple lines */
+  flex-wrap: nowrap;          /* don't allow wrap so labels stay on one line */
   box-sizing: border-box;
+  margin: 0;                  /* remove margin that created uneven spacing */
 }
 
 .segmented button {
@@ -420,29 +419,29 @@ button[disabled],
 /* --- Settings Rows --- */
 .settings-row {
   display: flex;
-  gap: 12px;
-  align-items: center;        /* vertical center label + controls */
-  margin: 8px 0;
-  min-height: var(--main-icon-size); /* align rows to icon/button height */
+  gap: 16px;
+  align-items: center;        /* vertically center label and controls */
+  padding: 10px 0;            /* consistent vertical spacing between rows */
   box-sizing: border-box;
 }
-
+  
 .label {
-  min-width: 110px;
-  height: 100%;
+  width: 120px;               /* fixed column width so controls line up */
   display: flex;
-  align-items: center;        /* vertically center the label text */
+  align-items: center;        /* vertical centering */
   font-size: 14px;
   color: #666;
-  white-space: nowrap;        /* avoid accidental wrapping of the label text */
+  white-space: nowrap;
   box-sizing: border-box;
+  padding-left: 4px;          /* small inner offset to match visual spacing */
 }
 
 .control {
   flex: 1;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: center;        /* align control items on their center line */
+  gap: 12px;
+  box-sizing: border-box;
 }
 
 /* --- Select --- */
