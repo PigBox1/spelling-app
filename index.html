@@ -294,12 +294,13 @@ button[disabled],
   text-align: center;
 }
 
+/* the hintLine below is repurposed to contain the definition after the round ends */
 .hint-line {
   margin-top: 8px;
   font-family: var(--mono);
-  color: #999;
+  color: #666;
   text-align: center;
-  min-height: 20px;
+  min-height: 28px;
   transition: opacity 0.25s ease;
 }
 
@@ -577,6 +578,7 @@ button[disabled],
             <div class="result" id="resultText" aria-live="polite"></div>
           </div>
 
+          <!-- reused to show definition once round ends -->
           <div class="hint-line" id="hintLine" aria-hidden="true"></div>
 
           <div class="feedback-wrap">
@@ -736,115 +738,113 @@ button[disabled],
   function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   // --- Robust loader: try wordslist.json, words.json, fallback to embedded ---
-  // Replace your existing loadWords() with this function
-async function loadWords(){
-  wordPool = [];
-  // maps canonical -> [variant1, variant2, ...] (all normalized)
-  window.variantsMap = window.variantsMap || {};
-  // maps canonical -> original display string (e.g. "color/colour")
-  window.displayMap = window.displayMap || {};
+  async function loadWords(){
+    wordPool = [];
+    // maps canonical -> [variant1, variant2, ...] (all normalized)
+    window.variantsMap = window.variantsMap || {};
+    // maps canonical -> original display string (e.g. "color/colour")
+    window.displayMap = window.displayMap || {};
 
-  function normalizeToken(s){
-    if (!s) return '';
-    return String(s).trim().toLowerCase().replace(/(^"|"$)/g,'').replace(/^\uFEFF/, '');
-  }
-  function extractVariantsFromField(field){
-    // convert parentheses to slash for predictable splitting: "colour (color)" -> "colour/color"
-    if (!field) return [];
-    let s = String(field).trim();
-    s = s.replace(/\(\s*([^)]+)\s*\)/g, '/$1');
-    // split on slash or comma
-    const parts = s.split(/\s*\/\s*|\s*,\s*/);
-    const out = [];
-    parts.forEach(p => {
-      const t = normalizeToken(p).replace(/^[^a-z0-9']+|[^a-z0-9']+$/g,'');
-      if (t && !out.includes(t)) out.push(t);
-    });
-    return out;
-  }
+    function normalizeToken(s){
+      if (!s) return '';
+      return String(s).trim().toLowerCase().replace(/(^"|"$)/g,'').replace(/^\uFEFF/, '');
+    }
+    function extractVariantsFromField(field){
+      // convert parentheses to slash for predictable splitting: "colour (color)" -> "colour/color"
+      if (!field) return [];
+      let s = String(field).trim();
+      s = s.replace(/\(\s*([^)]+)\s*\)/g, '/$1');
+      // split on slash or comma
+      const parts = s.split(/\s*\/\s*|\s*,\s*/);
+      const out = [];
+      parts.forEach(p => {
+        const t = normalizeToken(p).replace(/^[^a-z0-9']+|[^a-z0-9']+$/g,'');
+        if (t && !out.includes(t)) out.push(t);
+      });
+      return out;
+    }
 
-  async function tryFetch(name){
-    try {
-      const res = await fetch(name, { cache: 'no-store' });
-      const text = await res.text();
-      try { return JSON.parse(text); } catch(e){ console.warn(`${name} fetched but invalid JSON.`); return null; }
-    } catch(e){ return null; }
-  }
+    async function tryFetch(name){
+      try {
+        const res = await fetch(name, { cache: 'no-store' });
+        const text = await res.text();
+        try { return JSON.parse(text); } catch(e){ console.warn(`${name} fetched but invalid JSON.`); return null; }
+      } catch(e){ return null; }
+    }
 
-  // attempt network fetch (skip when running file:// to avoid CORS errors)
-  if (location.protocol !== 'file:') {
-    let json = await tryFetch('wordslist.json');
-    if (!json) json = await tryFetch('words.json');
-    if (json && Array.isArray(json) && json.length){
-      const expanded = [];
-      // for each entry expected {word: "color/colour", level: "easy"}
-      json.forEach(it => {
-        if (!it || !it.word) return;
-        const display = String(it.word).trim();
-        const variants = extractVariantsFromField(display);
-        if (!variants.length) return;
-        const canonical = variants[0]; // first variant as canonical token (normalized)
-        // store variants and displayMap
-        if (!window.variantsMap[canonical]) window.variantsMap[canonical] = [];
-        variants.forEach(v => {
-          if (!window.variantsMap[canonical].includes(v)) window.variantsMap[canonical].push(v);
+    // attempt network fetch (skip when running file:// to avoid CORS errors)
+    if (location.protocol !== 'file:') {
+      let json = await tryFetch('wordslist.json');
+      if (!json) json = await tryFetch('words.json');
+      if (json && Array.isArray(json) && json.length){
+        const expanded = [];
+        // for each entry expected {word: "color/colour", level: "easy"}
+        json.forEach(it => {
+          if (!it || !it.word) return;
+          const display = String(it.word).trim();
+          const variants = extractVariantsFromField(display);
+          if (!variants.length) return;
+          const canonical = variants[0]; // first variant as canonical token (normalized)
+          // store variants and displayMap
+          if (!window.variantsMap[canonical]) window.variantsMap[canonical] = [];
+          variants.forEach(v => {
+            if (!window.variantsMap[canonical].includes(v)) window.variantsMap[canonical].push(v);
+          });
+          window.displayMap[canonical] = display;
+          // push internal object (canonical internal word + level)
+          expanded.push({ word: canonical, level: (it.level || 'easy').toLowerCase() });
         });
-        window.displayMap[canonical] = display;
-        // push internal object (canonical internal word + level)
-        expanded.push({ word: canonical, level: (it.level || 'easy').toLowerCase() });
-      });
-      if (expanded.length){
-        wordPool = expanded;
-        console.info('Loaded external word list:', wordPool.length, 'words; variants registered:', Object.keys(window.variantsMap).length);
+        if (expanded.length){
+          wordPool = expanded;
+          console.info('Loaded external word list:', wordPool.length, 'words; variants registered:', Object.keys(window.variantsMap).length);
+        }
       }
     }
-  }
 
-  // fallback to embedded script tag id="embeddedWords" if nothing loaded
-  if (!wordPool.length){
-    try {
-      const embedded = JSON.parse(document.getElementById('embeddedWords').textContent);
-      const arr = (Array.isArray(embedded) ? embedded : embedded.words) || [];
-      const expanded = [];
-      arr.forEach(it => {
-        if (!it || !it.word) return;
-        const display = String(it.word).trim();
-        const variants = extractVariantsFromField(display);
-        if (!variants.length) return;
-        const canonical = variants[0];
-        if (!window.variantsMap[canonical]) window.variantsMap[canonical] = [];
-        variants.forEach(v => { if (!window.variantsMap[canonical].includes(v)) window.variantsMap[canonical].push(v); });
-        window.displayMap[canonical] = display;
-        expanded.push({ word: canonical, level: (it.level || 'easy').toLowerCase() });
-      });
-      if (expanded.length){
-        wordPool = expanded;
-        console.info('Using embedded word list, count:', wordPool.length);
+    // fallback to embedded script tag id="embeddedWords" if nothing loaded
+    if (!wordPool.length){
+      try {
+        const embedded = JSON.parse(document.getElementById('embeddedWords').textContent);
+        const arr = (Array.isArray(embedded) ? embedded : embedded.words) || [];
+        const expanded = [];
+        arr.forEach(it => {
+          if (!it || !it.word) return;
+          const display = String(it.word).trim();
+          const variants = extractVariantsFromField(display);
+          if (!variants.length) return;
+          const canonical = variants[0];
+          if (!window.variantsMap[canonical]) window.variantsMap[canonical] = [];
+          variants.forEach(v => { if (!window.variantsMap[canonical].includes(v)) window.variantsMap[canonical].push(v); });
+          window.displayMap[canonical] = display;
+          expanded.push({ word: canonical, level: (it.level || 'easy').toLowerCase() });
+        });
+        if (expanded.length){
+          wordPool = expanded;
+          console.info('Using embedded word list, count:', wordPool.length);
+        }
+      } catch(e){
+        console.warn('Embedded words parse failed; loading tiny fallback.');
+        wordPool = [{word:'genuine',level:'easy'},{word:'resilient',level:'advanced'},{word:'ubiquitous',level:'proficient'}];
+        window.variantsMap = window.variantsMap || {};
+        window.displayMap = window.displayMap || {};
+        wordPool.forEach(w => { window.variantsMap[w.word] = [w.word]; window.displayMap[w.word] = w.word; });
       }
-    } catch(e){
-      console.warn('Embedded words parse failed; loading tiny fallback.');
-      wordPool = [{word:'genuine',level:'easy'},{word:'resilient',level:'advanced'},{word:'ubiquitous',level:'proficient'}];
-      window.variantsMap = window.variantsMap || {};
-      window.displayMap = window.displayMap || {};
-      wordPool.forEach(w => { window.variantsMap[w.word] = [w.word]; window.displayMap[w.word] = w.word; });
     }
+
+    // build per-level queues the same way you already did
+    ['easy','advanced','proficient'].forEach(l=>{
+      const arr = wordPool.filter(w => w.level === l).slice();
+      queues[l] = shuffle(arr);
+    });
+
+    // ensure every canonical has at least itself in variantsMap & displayMap
+    window.variantsMap = window.variantsMap || {};
+    window.displayMap = window.displayMap || {};
+    wordPool.forEach(w => {
+      if (!window.variantsMap[w.word]) window.variantsMap[w.word] = [w.word];
+      if (!window.displayMap[w.word]) window.displayMap[w.word] = w.word;
+    });
   }
-
-  // build per-level queues the same way you already did
-  ['easy','advanced','proficient'].forEach(l=>{
-    const arr = wordPool.filter(w => w.level === l).slice();
-    queues[l] = shuffle(arr);
-  });
-
-  // ensure every canonical has at least itself in variantsMap & displayMap
-  window.variantsMap = window.variantsMap || {};
-  window.displayMap = window.displayMap || {};
-  wordPool.forEach(w => {
-    if (!window.variantsMap[w.word]) window.variantsMap[w.word] = [w.word];
-    if (!window.displayMap[w.word]) window.displayMap[w.word] = w.word;
-  });
-}
-
 
   function pickWordForDifficulty(level){
     level = (level || 'proficient').toLowerCase();
@@ -940,19 +940,57 @@ async function loadWords(){
     for (let i = firstRemaining; i <= endIndex; i++) segEls[i].style.background = 'transparent';
   }
 
+  // NEW: updateRevealHint now writes into the input placeholder (for easy mode)
   function updateRevealHint(){
-    if (settings.mode !== 'easy' || !currentWord){ hintLine.textContent = ''; return; }
+    if (settings.mode !== 'easy' || !currentWord){ 
+      // reset placeholder to default when not easy
+      inputAnswer.placeholder = 'Type what you hear...';
+      return; 
+    }
     const total = 5;
     const usedWrong = attemptsThisRound.filter(a => a.outcome !== 'correct').length;
     const revealPercent = Math.min(100, Math.ceil((usedWrong / total) * 100));
+    // use canonical token length for reveal calculation (it's normalized)
     const lettersToReveal = Math.floor((revealPercent / 100) * currentWord.length);
     const visible = currentWord.slice(0, lettersToReveal);
     const hidden = currentWord.slice(lettersToReveal);
     if (lettersToReveal >= currentWord.length){
-      hintLine.innerHTML = `<span style="color:${COLOR_GREEN};opacity:1">${escapeHtml(currentWord)}</span>`;
+      inputAnswer.placeholder = `${currentWord}`;
     } else {
-      hintLine.innerHTML = `<span style="color:#888">${escapeHtml(visible)}</span><span style="color:#bbb">${'•'.repeat(Math.max(1, hidden.length))}</span>`;
+      inputAnswer.placeholder = `${visible}${'•'.repeat(Math.max(1, hidden.length))}`;
     }
+  }
+
+  // fetch definition from dictionaryapi.dev - try variants in order until one returns a definition
+  async function fetchDefinitionForVariants(variants){
+    if (!variants || !variants.length) return null;
+    for (let v of variants){
+      try {
+        const url = 'https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(v);
+        const res = await fetch(url, {cache:'no-store'});
+        if (!res.ok) {
+          // 404 likely - try next variant
+          continue;
+        }
+        const data = await res.json();
+        // data is an array; take first meaning/definition available
+        if (Array.isArray(data) && data.length){
+          const entry = data[0];
+          if (entry.meanings && entry.meanings.length){
+            const meaning = entry.meanings[0];
+            if (meaning.definitions && meaning.definitions.length){
+              const def = meaning.definitions[0].definition;
+              if (def) return def;
+            }
+          }
+        }
+      } catch(e){
+        // network or parse error — try next variant
+        console.warn('Definition fetch error for', v, e);
+        continue;
+      }
+    }
+    return null;
   }
 
 async function startNewRound(manual=false){
@@ -987,8 +1025,10 @@ async function startNewRound(manual=false){
   inputAnswer.style.borderColor = '';     // reset to CSS default
   inputAnswer.style.background = 'transparent';
   inputAnswer.style.color = '';           // in case previous code changed it
+  inputAnswer.placeholder = 'Type what you hear...';
 
   if (btnCheck) btnCheck.disabled = false;
+  // hintLine now used for definitions; clear it at round start
   hintLine.textContent = '';
 
   // reset replay count & play button enable
@@ -999,11 +1039,15 @@ async function startNewRound(manual=false){
   currentWord = pickWordForDifficulty(level);
   roundStart = performance.now();
 
+  // easy mode initial placeholder hint (instead of showing it below)
   if (settings.mode === 'easy'){
+    // show just a tiny reveal to start (1 character or so)
     const reveal = Math.min(1, Math.ceil(currentWord.length * 0.05));
-    hintLine.innerHTML = `<span style="color:#888">${escapeHtml(currentWord.slice(0,reveal))}</span>${'•'.repeat(Math.max(1,currentWord.length-reveal))}`;
+    const visible = currentWord.slice(0, reveal);
+    const hidden = currentWord.slice(reveal);
+    inputAnswer.placeholder = `${visible}${'•'.repeat(Math.max(1, hidden.length))}`;
   } else {
-    hintLine.textContent = '';
+    inputAnswer.placeholder = 'Type what you hear...';
   }
 
   // automatic initial spoken audio (do not count towards hardcore replay limit)
@@ -1025,7 +1069,7 @@ async function startNewRound(manual=false){
   function easyAttemptMultiplier(idx){ return ({1:1.0,2:0.8,3:0.6,4:0.4,5:0.2})[idx] || 0; }
 
 // Replace your current onCheck() with this function
-function onCheck(){
+async function onCheck(){
   if (!currentWord) return;
   const raw = (inputAnswer.value || '').trim().toLowerCase();
   if (!raw) return;
@@ -1060,7 +1104,10 @@ function onCheck(){
     mergeRemainingIntoGreen(usedBefore);
   } else {
     colorSegment(idx, outcome === 'almost' ? COLOR_YELLOW : COLOR_RED);
-    if (settings.mode === 'easy') inputAnswer.value = '';
+    if (settings.mode === 'easy') {
+      inputAnswer.value = '';
+      updateRevealHint(); // update placeholder hint after the wrong attempt
+    }
   }
 
   if (settings.mode === 'easy') updateRevealHint();
@@ -1101,6 +1148,14 @@ function onCheck(){
 
     stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: pts, correct:true, incomplete:false, mode: settings.mode });
     persistStats();
+
+    // fetch and show definition under input
+    hintLine.textContent = 'Looking up definition…';
+    const variantsToTry = (window.variantsMap && window.variantsMap[currentWord]) || [currentWord];
+    const def = await fetchDefinitionForVariants(variantsToTry);
+    if (def) hintLine.innerHTML = `<strong>Definition:</strong> ${escapeHtml(def)}`;
+    else hintLine.innerHTML = `<strong>Definition:</strong> Definition unavailable`;
+
     if (settings.autoNext){
       if (autoNextTimer) clearTimeout(autoNextTimer);
       autoNextTimer = setTimeout(()=>{ startNewRound(false); autoNextTimer = null; }, 3000);
@@ -1123,6 +1178,14 @@ function onCheck(){
       colorAllSegments(COLOR_RED);
       stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: 0, correct:false, incomplete:false, mode: settings.mode });
       persistStats();
+
+      // fetch and show definition under input (on failure too)
+      hintLine.textContent = 'Looking up definition…';
+      const variantsToTry = (window.variantsMap && window.variantsMap[currentWord]) || [currentWord];
+      const def = await fetchDefinitionForVariants(variantsToTry);
+      if (def) hintLine.innerHTML = `<strong>Definition:</strong> ${escapeHtml(def)}`;
+      else hintLine.innerHTML = `<strong>Definition:</strong> Definition unavailable`;
+
       if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer = setTimeout(()=>{ startNewRound(false); autoNextTimer = null; }, 3000); }
     } else {
       if (settings.mode !== 'hardcore') {
