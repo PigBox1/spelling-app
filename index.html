@@ -1004,36 +1004,109 @@ button[disabled],
   }
 
   // fetch definition from dictionaryapi.dev - try variants in order until one returns a definition
-  async function fetchDefinitionForVariants(variants){
-    if (!variants || !variants.length) return null;
-    for (let v of variants){
-      try {
-        const url = 'https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(v);
-        const res = await fetch(url, {cache:'no-store'});
-        if (!res.ok) {
-          // 404 likely - try next variant
-          continue;
-        }
-        const data = await res.json();
-        // data is an array; take first meaning/definition available
-        if (Array.isArray(data) && data.length){
-          const entry = data[0];
-          if (entry.meanings && entry.meanings.length){
-            const meaning = entry.meanings[0];
-            if (meaning.definitions && meaning.definitions.length){
-              const def = meaning.definitions[0].definition;
-              if (def) return def;
+  // Replace your existing fetchDefinitionForVariants(...) with this version.
+// Tries jsDelivr first (CORS-friendly), falls back to raw.githubusercontent, tolerant parsing.
+async function fetchDefinitionForVariants(variants) {
+  if (!variants || !variants.length) return null;
+
+  const cdnBase = 'https://cdn.jsdelivr.net/gh/open-dictionary/english-dictionary@main/data/';
+  const rawBase = 'https://raw.githubusercontent.com/open-dictionary/english-dictionary/main/data/';
+  // helper to build letter-path e.g. "apple" -> "a/p/p/l/e/_.json"
+  function buildPathForWord(word) {
+    const clean = String(word || '').trim().toLowerCase().replace(/[^a-z0-9']/g,'');
+    if (!clean) return null;
+    return clean.split('').join('/') + '/_.json';
+  }
+
+  // tolerant JSON parser: tries several common shapes and returns a definition string or null
+  function parseDefinitionFromJson(payload) {
+    try {
+      // Many small dictionary JSONs use an array of entries with meanings/definitions
+      if (Array.isArray(payload) && payload.length) {
+        // try the common "meanings -> definitions" shape
+        for (const entry of payload) {
+          if (entry && entry.meanings && entry.meanings.length) {
+            for (const m of entry.meanings) {
+              if (m.definitions && m.definitions.length) {
+                const d = m.definitions.find(dd => dd && (dd.definition || dd.def));
+                if (d) return String(d.definition || d.def).trim();
+              }
             }
           }
         }
-      } catch(e){
-        // network or parse error — try next variant
-        console.warn('Definition fetch error for', v, e);
-        continue;
+        // fallback: maybe payload[0].definition or payload[0].meaning
+        if (payload[0] && (payload[0].definition || payload[0].meaning)) {
+          return String(payload[0].definition || payload[0].meaning).trim();
+        }
       }
+      // single-object form with "meanings"
+      if (payload && payload.meanings && payload.meanings.length) {
+        for (const m of payload.meanings) {
+          if (m.definitions && m.definitions.length) {
+            const d = m.definitions.find(dd => dd && (dd.definition || dd.def));
+            if (d) return String(d.definition || d.def).trim();
+          }
+        }
+      }
+      // other simple shapes
+      if (payload && payload.definition) return String(payload.definition).trim();
+      if (payload && payload.meaning) return String(payload.meaning).trim();
+
+      // fallback: if there's a "definitions" array at root
+      if (Array.isArray(payload.definitions) && payload.definitions.length) {
+        const d = payload.definitions.find(dd => dd && (dd.definition || dd.def));
+        if (d) return String(d.definition || d.def).trim();
+      }
+    } catch (e) {
+      // ignore parse errors here; will return null
     }
     return null;
   }
+
+  // Try variants sequentially
+  for (const variantRaw of variants) {
+    const variant = String(variantRaw || '').trim().toLowerCase();
+    if (!variant) continue;
+    const rel = buildPathForWord(variant);
+    if (!rel) continue;
+
+    // try cdn.jsdelivr first (CORS-friendly / fast)
+    const urlCdn = cdnBase + rel;
+    try {
+      const r = await fetch(urlCdn, { cache: 'no-store' });
+      if (r.ok) {
+        const json = await r.json().catch(()=>null);
+        if (json) {
+          const parsed = parseDefinitionFromJson(json);
+          if (parsed) return parsed;
+          // if file present but no parseable def, continue to next variant
+        }
+      }
+    } catch (err) {
+      // ignore and try fallback
+      console.debug('jsdelivr fetch failed for', variant, err);
+    }
+
+    // fallback to raw.githubusercontent (sometimes present even if CDN edge not updated)
+    const urlRaw = rawBase + rel;
+    try {
+      const r2 = await fetch(urlRaw, { cache: 'no-store' });
+      if (r2.ok) {
+        const json2 = await r2.json().catch(()=>null);
+        if (json2) {
+          const parsed2 = parseDefinitionFromJson(json2);
+          if (parsed2) return parsed2;
+        }
+      }
+    } catch (err) {
+      console.debug('raw.githubusercontent fetch failed for', variant, err);
+    }
+  }
+
+  // none of the variants returned a usable definition
+  return null;
+}
+
 
   // helper that updates the visible hintLine when a definition is available
   function updateDisplayedDefinitionFor(word){
