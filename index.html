@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -31,6 +30,7 @@ nav button.active{background:#dfe4e7;color:#111}
 /* top row */
 .play-row { display:flex; gap:10px; align-items:stretch; justify-content:center; margin-bottom:8px; }
 .btn-play { display:inline-flex; align-items:center; justify-content:center; background:var(--muted-2); color:#fff; border-radius:12px; padding:0 12px; border:none; cursor:pointer; min-width:48px; height:44px; box-sizing:border-box; }
+.btn-play[disabled]{ opacity:0.6; cursor:not-allowed; }
 .btn { background:var(--muted-2); color:#fff; border:none; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:700; height:44px; box-sizing:border-box; }
 .btn.small { padding:8px 10px; min-width:84px }
 .btn:disabled { opacity:0.6; cursor:not-allowed }
@@ -78,7 +78,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
 
 /* settings segmented controls */
 .segmented { display:flex; gap:6px; background:transparent; border-radius:10px; padding:6px }
-.segmented button { background:transparent; border:none; padding:8px 10px; border-radius:8px; cursor:pointer; color:#666; font-weight:700 }
+.segmented button { background:transparent; border:none; padding:8px 10px; border-radius:8px; cursor:pointer; color:#666; font-weight:700; position:relative; }
 .segmented button.on { background:#e6e9ea; color:#111 }
 
 /* settings rows */
@@ -161,7 +161,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div class="small" id="statsSummary">Total: 0 | Accuracy: 0%</div>
             <div>
-              <button id="btnClearStats" class="btn small" style="background:#f2f2f2;color:#333" type="button">Clear</button>
+              <button id="btnClearStats" class="btn small" style="background:#f2f2f2;color:#333" type="button">Wipe</button>
             </div>
           </div>
           <div class="stats-list" id="statsList"></div>
@@ -186,7 +186,8 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
               <div class="control">
                 <div class="segmented" id="segMode">
                   <button data-val="normal" type="button">Normal</button>
-                  <button data-val="easy" type="button">Easy (hints, 5 attempts)</button>
+                  <button data-val="easy" type="button">Easy</button>
+                  <button data-val="hardcore" type="button">Hardcore</button>
                 </div>
               </div>
             </div>
@@ -200,7 +201,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
               </div>
             </div>
 
-            <div class="small" style="color:#666">Auto Next control moved to Game. Word source removed from settings.</div>
+            <div class="small" style="color:#666">made with ❤️ (and chatgpt) by daniel</div>
           </div>
         </section>
       </main>
@@ -247,6 +248,10 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   let totalScore = 0;
   let autoNextTimer = null;
 
+  // replay tracking for hardcore mode
+  let replayCount = 0;
+  const HARDCORE_MAX_REPLAYS = 3;
+
   let stats = JSON.parse(localStorage.getItem('spelling_stats') || '[]');
   const defaultSettings = { autoNext:false, difficulty:'proficient', mode:'normal', voice:'' };
   let settings = Object.assign({}, defaultSettings, JSON.parse(localStorage.getItem('spelling_settings') || '{}'));
@@ -265,8 +270,12 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
     miniTooltip.style.background = bg; miniTooltip.style.color = txtColor; miniTooltip.textContent = text;
     document.body.appendChild(miniTooltip);
     const r = miniTooltip.getBoundingClientRect();
-    miniTooltip.style.left = (x - r.width/2) + 'px';
-    miniTooltip.style.top = (y - r.height - 10) + 'px';
+    // clamp horizontally and flip if near top
+    let left = Math.max(6, Math.min(window.innerWidth - r.width - 6, x - r.width/2));
+    let top = y - r.height - 10;
+    if (top < 6) top = y + 14;
+    miniTooltip.style.left = left + 'px';
+    miniTooltip.style.top = top + 'px';
     requestAnimationFrame(()=>{ miniTooltip.style.opacity = 1; miniTooltip.style.transform = 'translateY(0)'; });
   }
   function hideMiniTooltip(){ if (miniTooltip){ miniTooltip.remove(); miniTooltip = null; } }
@@ -350,7 +359,9 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   // segments
   function renderSegments(){
     feedbackBar.innerHTML = '';
-    const segCount = (settings.mode === 'easy') ? 5 : 3;
+    let segCount = 3;
+    if (settings.mode === 'easy') segCount = 5;
+    else if (settings.mode === 'hardcore') segCount = 1;
     for (let i=0;i<segCount;i++){
       const d = document.createElement('div');
       d.className = 'segment';
@@ -387,9 +398,16 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
     setTimeout(()=>{ comboEl.classList.remove('show'); comboEl.style.background = ''; }, 1000);
   }
 
-  // speak using selected voice
+  // speak using selected voice (and count replays)
   function speak(word){
     if (!word) return;
+    // block when hardcore and replayCount exceeded
+    if (settings.mode === 'hardcore' && replayCount >= HARDCORE_MAX_REPLAYS){
+      // disable button visually and do nothing
+      if (btnPlay) btnPlay.disabled = true;
+      showResult('No replays left', COLOR_RED);
+      return;
+    }
     const u = new SpeechSynthesisUtterance(word);
     if (settings.voice){
       const v = speechSynthesis.getVoices().find(x => x.name === settings.voice);
@@ -398,6 +416,8 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
     u.rate = 0.95;
     speechSynthesis.cancel();
     speechSynthesis.speak(u);
+    // increment replay count when user manually presses play (not on automatic play from startNewRound)
+    // We'll increment in the play button handler to avoid double count on automatic start
   }
 
   function mergeRemainingIntoGreen(usedCount){
@@ -433,6 +453,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   async function startNewRound(manual=false){
     if (manual && autoNextTimer){ clearTimeout(autoNextTimer); autoNextTimer = null; }
 
+    // if there was an unfinished round with attempts, save as incomplete
     if (!roundEnded && attemptsThisRound.length > 0){
       let best = 0; attemptsThisRound.forEach(a => { if (a.outcome === 'correct') best = Math.max(best, 1.0); else if (a.outcome === 'almost') best = Math.max(best, 0.6); });
       const used = attemptsThisRound.length;
@@ -452,6 +473,10 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
     inputAnswer.value = ''; inputAnswer.disabled = false; btnCheck.disabled = false;
     showResult('', '#444'); hintLine.textContent = '';
 
+    // reset replay count & play button enable
+    replayCount = 0;
+    if (btnPlay){ btnPlay.disabled = false; }
+
     const level = settings.difficulty || 'proficient';
     currentWord = pickWordForDifficulty(level);
     roundStart = performance.now();
@@ -463,7 +488,19 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
       hintLine.textContent = '';
     }
 
-    setTimeout(()=>{ speak(currentWord); showResult('Word ready — listening...', '#666'); }, 320);
+    // Auto-play initial audio
+    setTimeout(()=>{ 
+      // automatic play shouldn't count as a replay in hardcore limit (user replays are counted)
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(currentWord);
+      if (settings.voice){
+        const v = speechSynthesis.getVoices().find(x => x.name === settings.voice);
+        if (v) u.voice = v;
+      }
+      u.rate = 0.95;
+      speechSynthesis.speak(u);
+      showResult('Word ready — listening...', '#666'); 
+    }, 320);
     setTimeout(()=> inputAnswer.focus(), 700);
   }
 
@@ -519,6 +556,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
       showFloating(0, 'red');
     }
 
+    // endings per mode
     if (outcome === 'correct'){
       roundEnded = true; inputAnswer.disabled = true; btnCheck.disabled = true;
       stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: pts, correct:true, incomplete:false, mode: settings.mode });
@@ -528,25 +566,20 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
         autoNextTimer = setTimeout(()=>{ startNewRound(false); autoNextTimer = null; }, 3000);
       }
     } else {
-      if (settings.mode === 'easy'){
-        if (attemptsThisRound.length >= 5){
-          roundEnded = true; inputAnswer.disabled = true; btnCheck.disabled = true;
-          showResult(`Out — the word was "${currentWord}".`, COLOR_RED);
-          colorAllSegments(COLOR_RED);
-          stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: 0, correct:false, incomplete:false, mode: settings.mode });
-          persistStats();
-          if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer = setTimeout(()=>{ startNewRound(false); autoNextTimer = null; }, 3000); }
-        }
+      const maxAttempts = settings.mode === 'easy' ? 5 : (settings.mode === 'hardcore' ? 1 : 3);
+      if (attemptsThisRound.length >= maxAttempts){
+        roundEnded = true; inputAnswer.disabled = true; btnCheck.disabled = true;
+        showResult(`Out — the word was "${currentWord}".`, COLOR_RED);
+        colorAllSegments(COLOR_RED);
+        stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: 0, correct:false, incomplete:false, mode: settings.mode });
+        persistStats();
+        if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer = setTimeout(()=>{ startNewRound(false); autoNextTimer = null; }, 3000); }
       } else {
-        if (attemptsThisRound.length >= 3){
-          roundEnded = true; inputAnswer.disabled = true; btnCheck.disabled = true;
-          showResult(`Out — the word was "${currentWord}".`, COLOR_RED);
-          colorAllSegments(COLOR_RED);
-          stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: 0, correct:false, incomplete:false, mode: settings.mode });
-          persistStats();
-          if (settings.autoNext){ if (autoNextTimer) clearTimeout(autoNextTimer); autoNextTimer = setTimeout(()=>{ startNewRound(false); autoNextTimer = null; }, 3000); }
-        } else {
+        if (settings.mode !== 'hardcore') {
           inputAnswer.value = ''; inputAnswer.focus();
+        } else {
+          // hardcore: input disabled after attempt because only 1 attempt allowed
+          inputAnswer.value = ''; inputAnswer.disabled = true; btnCheck.disabled = true;
         }
       }
     }
@@ -570,7 +603,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
         left.appendChild(icon);
       }
       const right = document.createElement('div'); right.className = 'stat-right';
-      const segCount = (s.mode === 'easy') ? 5 : 3;
+      const segCount = (s.mode === 'easy') ? 5 : (s.mode === 'hardcore' ? 1 : 3);
       const mini = document.createElement('div'); mini.className = 'mini-bar';
       for (let i=0;i<segCount;i++){
         const ms = document.createElement('div'); ms.className = 'mini-seg'; ms.style.background = COLOR_NEUTRAL;
@@ -579,14 +612,32 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
           if (a.outcome === 'correct') ms.style.background = COLOR_GREEN;
           else if (a.outcome === 'almost') ms.style.background = COLOR_YELLOW;
           else ms.style.background = COLOR_RED;
+          // unified hover + tap handler that works on mobile (taps)
           ms.addEventListener('mouseenter', (ev)=>{
-            const r = ev.target.getBoundingClientRect();
-            const text = `${capitalize(a.outcome)}: ${a.value}`;
-            const bg = a.outcome === 'correct' ? COLOR_GREEN : (a.outcome === 'almost' ? COLOR_YELLOW : COLOR_RED);
-            const txt = (a.outcome === 'almost' ? '#111' : '#fff');
-            showMiniTooltip(r.left + r.width/2, r.top, text, bg, txt);
+            if (window.matchMedia('(hover: hover)').matches){
+              const r = ev.target.getBoundingClientRect();
+              const text = `${capitalize(a.outcome)}: ${a.value}`;
+              const bg = a.outcome === 'correct' ? COLOR_GREEN : (a.outcome === 'almost' ? COLOR_YELLOW : COLOR_RED);
+              const txt = (a.outcome === 'almost' ? '#111' : '#fff');
+              showMiniTooltip(r.left + r.width/2, r.top, text, bg, txt);
+            }
           });
-          ms.addEventListener('mouseleave', hideMiniTooltip);
+          ms.addEventListener('mouseleave', ()=>{
+            if (window.matchMedia('(hover: hover)').matches) hideMiniTooltip();
+          });
+
+          ms.addEventListener('click', (ev)=>{
+            if (!window.matchMedia('(hover: hover)').matches){
+              ev.stopPropagation();
+              const r = ev.target.getBoundingClientRect();
+              const text = `${capitalize(a.outcome)}: ${a.value}`;
+              const bg = a.outcome === 'correct' ? COLOR_GREEN : (a.outcome === 'almost' ? COLOR_YELLOW : COLOR_RED);
+              const txt = (a.outcome === 'almost' ? '#111' : '#fff');
+              const already = miniTooltip !== null;
+              hideMiniTooltip();
+              if (!already) showMiniTooltip(r.left + r.width/2, r.top, text, bg, txt);
+            }
+          });
         }
         mini.appendChild(ms);
       }
@@ -598,16 +649,46 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
     });
   }
 
-  btnClearStats.addEventListener('click', ()=>{ if (!confirm('Clear statistics?')) return; stats = []; persistStats(); renderStats(); });
+  btnClearStats.addEventListener('click', ()=>{ if (!confirm('Wipe statistics?')) return; stats = []; persistStats(); renderStats(); });
 
   // Settings UI
   function renderSettings(){
+    // difficulty buttons
     Array.from(segDifficulty.querySelectorAll('button')).forEach(b => b.classList.toggle('on', b.dataset.val === settings.difficulty));
+    // mode buttons
     Array.from(segMode.querySelectorAll('button')).forEach(b => b.classList.toggle('on', b.dataset.val === settings.mode));
-    // voice select restore handled elsewhere
   }
+
   segDifficulty.addEventListener('click',(e)=>{ if (e.target.tagName!=='BUTTON') return; settings.difficulty = e.target.dataset.val; persistSettings(); renderSettings(); startNewRound(false); });
-  segMode.addEventListener('click',(e)=>{ if (e.target.tagName!=='BUTTON') return; settings.mode = e.target.dataset.val; persistSettings(); renderSettings(); renderSegments(); startNewRound(false); });
+
+  // mode tooltips/messages mapping
+  const modeTooltips = {
+    easy: '5 attempts, progressive hints',
+    normal: '3 attempts, no help',
+    hardcore: '1 attempt, limited audio replays'
+  };
+
+  // show tooltip for mode buttons on hover / tap
+  Array.from(segMode.querySelectorAll('button')).forEach(btn=>{
+    btn.addEventListener('click',(e)=>{ settings.mode = e.target.dataset.val; persistSettings(); renderSettings(); renderSegments(); startNewRound(false); });
+    btn.addEventListener('mouseenter',(e)=>{
+      if (window.matchMedia('(hover: hover)').matches){
+        const r = e.target.getBoundingClientRect();
+        showMiniTooltip(r.left + r.width/2, r.top, modeTooltips[e.target.dataset.val], '#444', '#fff');
+      }
+    });
+    btn.addEventListener('mouseleave',(e)=>{ if (window.matchMedia('(hover: hover)').matches) hideMiniTooltip(); });
+    btn.addEventListener('click',(e)=>{
+      // on touch devices, also show a brief tooltip (toggle)
+      if (!window.matchMedia('(hover: hover)').matches){
+        const r = e.target.getBoundingClientRect();
+        const val = e.target.dataset.val;
+        const already = miniTooltip !== null;
+        hideMiniTooltip();
+        if (!already) showMiniTooltip(r.left + r.width/2, r.top, modeTooltips[val], '#444', '#fff');
+      }
+    });
+  });
 
   // Auto next toggle (single game control only)
   function setAutoNext(enabled){
@@ -646,8 +727,34 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   function showResult(text,color='#444'){ resultText.textContent = text; resultText.style.color = color; }
   function updateScore(){ scoreText.textContent = `Score: ${totalScore}`; }
 
-  // Event bindings
-  btnPlay.addEventListener('click', ()=>{ if (currentWord) speak(currentWord); });
+  // Play button handler - counts user replay attempts in hardcore mode
+  btnPlay.addEventListener('click', ()=>{
+    if (!currentWord) { showResult('No selected word yet', '#999'); return; }
+    // For hardcore, block after HARDCORE_MAX_REPLAYS
+    if (settings.mode === 'hardcore'){
+      if (replayCount >= HARDCORE_MAX_REPLAYS){
+        btnPlay.disabled = true;
+        showResult('No replays left', COLOR_RED);
+        return;
+      }
+      // user-initiated replay increments count
+      replayCount++;
+      if (replayCount >= HARDCORE_MAX_REPLAYS){
+        // disable immediately to reflect block
+        btnPlay.disabled = true;
+      }
+    }
+    // speak
+    const u = new SpeechSynthesisUtterance(currentWord);
+    if (settings.voice){
+      const v = speechSynthesis.getVoices().find(x => x.name === settings.voice);
+      if (v) u.voice = v;
+    }
+    u.rate = 0.95;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  });
+
   btnNext.addEventListener('click', ()=>{ if (autoNextTimer){ clearTimeout(autoNextTimer); autoNextTimer = null; } startNewRound(true); });
   btnCheck.addEventListener('click', onCheck);
   inputAnswer.addEventListener('keydown', (e)=>{ if (e.key === 'Enter'){ e.preventDefault(); onCheck(); } });
@@ -673,7 +780,7 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   // persist
   window.addEventListener('beforeunload', ()=>{ persistSettings(); persistStats(); });
 
-  // tooltip removal on outside click
+  // global click to close tooltip
   document.addEventListener('click',(e)=>{ if (miniTooltip && !miniTooltip.contains(e.target)) hideMiniTooltip(); });
 
 })();
