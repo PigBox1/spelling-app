@@ -6,181 +6,190 @@
 <title>Spelling Trainer</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
 <style>
-:root{
-  --page-bg:#eceff1;
-  --card-bg:#fff;
-  --muted:#cfcfcf;
-  --muted-2:#bfbfbf;
-  --accent-green:#4CAF50;
-  --accent-yellow:#FFC107;
-  --accent-red:#F44336;
-  --card-width:760px;
-  --shadow:0 10px 30px rgba(20,20,30,0.06);
-  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
-}
-html,body{height:100%;margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:var(--page-bg);color:#222}
-.wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:28px}
-.card{width:100%;max-width:var(--card-width);background:var(--card-bg);border-radius:18px;box-shadow:var(--shadow);padding:20px;box-sizing:border-box}
-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-header h1{font-size:18px;margin:0}
-nav{display:flex;gap:8px}
-nav button{border:none;background:transparent;padding:8px 12px;border-radius:10px;cursor:pointer;color:#555;font-weight:700}
-nav button.active{background:#dfe4e7;color:#111}
-
-/* top row */
-.play-row { display:flex; gap:10px; align-items:center; justify-content:center; margin-bottom:8px; }
-.btn-play { display:inline-flex; align-items:center; justify-content:center; background:var(--muted-2); color:#fff; border-radius:12px; padding:0 12px; border:none; cursor:pointer; min-width:48px; height:44px; box-sizing:border-box; }
-.btn-play[disabled]{ opacity:0.6; cursor:not-allowed; }
-.icon-btn { background:var(--muted-2); color:#fff; border:none; padding:0; width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; border-radius:12px; cursor:pointer; box-sizing:border-box; }
-.icon-btn[title]:hover { filter:brightness(.97); }
-
-/* keep a minimal visual label area to the right (result text) */
-.result { font-weight:700; color:#444; min-width:0; flex:1; text-align:center; }
-
-/* text input */
-input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e6e6e6;font-size:16px;min-width:220px;box-sizing:border-box;height:44px}
-
-/* hint below input */
-.hint-line { margin-top:8px; font-family:var(--mono); color:#999; text-align:center; min-height:20px; transition:opacity .25s ease; }
-
-/* feedback bar */
-.feedback-wrap { width:100%; display:flex; justify-content:center; margin-top:8px }
-.feedback-bar { width:100%; display:flex; gap:10px; position:relative; align-items:center; padding:6px 0; }
-.segment { flex:1; height:14px; background:var(--muted); border-radius:10px; transition:background .22s ease, flex .22s ease, width .22s ease; position:relative; }
-.merged { position:absolute; height:14px; background:var(--accent-green); border-radius:10px; transition:left .22s ease, width .22s ease, opacity .22s ease; opacity:0; pointer-events:none; }
-
-/* controls/mode toggles */
-.controls { display:flex; gap:10px; margin-top:12px; align-items:center; }
-.score-area { position:relative; display:flex; align-items:center; gap:8px; min-width:110px; justify-content:flex-end }
-.score { font-weight:800; color:#222 }
-
-/* Auto Next button: when ON -> white with light grey outline; OFF -> grey like other buttons */
-.auto-btn {
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  padding:0 14px;
-  height:44px;
-  border-radius:12px;
-  border:1px solid transparent;
-  background:var(--muted-2);
-  color:#fff;
-  cursor:pointer;
-  min-width:140px;
-  box-sizing:border-box;
-  font-weight:700;
-}
-.auto-btn.checked {
-  background:#fff;
-  color:#111;
-  border:1px solid #e6e6e6;
-}
-
-/* settings segmented controls */
-.segmented { display:flex; gap:6px; background:transparent; border-radius:10px; padding:6px }
-.segmented button { background:transparent; border:none; padding:8px 10px; border-radius:8px; cursor:pointer; color:#666; font-weight:700; position:relative; }
-.segmented button.on { background:#e6e9ea; color:#111 }
-
-/* settings rows */
-.settings-row { display:flex; gap:12px; align-items:center; margin:8px 0; }
-.label { min-width:110px; font-size:14px; color:#666 }
-.control { flex:1; display:flex; align-items:center; gap:8px }
-
-/* select */
-.select { padding:10px 12px; border-radius:10px; border:1px solid #e6e6e6; background:#fff; font-size:14px; width:100%; box-sizing:border-box; }
-
-/* stats */
-.stats-list { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
-.stat-row { display:flex; gap:12px; align-items:center; justify-content:space-between; padding:8px; border-radius:10px; background:#fbfbfb; border:1px solid #f0f0f0 }
-.stat-left { display:flex; align-items:center; gap:8px; flex:1; font-weight:600; }
-.stat-right { display:flex; align-items:center; gap:12px; width:300px; justify-content:flex-end; }
-
-/* mini bar */
-.mini-bar { display:flex; gap:6px; width:180px; height:12px; align-items:center; position:relative; }
-.mini-seg { flex:1; height:100%; border-radius:8px; transition:background .18s ease; background:var(--muted); position:relative; }
-
-/* tooltip */
-.mini-tooltip { position:fixed; z-index:9999; padding:6px 8px; border-radius:6px; color:#fff; font-weight:700; font-size:12px; white-space:pre-line; pointer-events:none; transform:translateY(-6px); opacity:0; transition:opacity .12s ease, transform .12s ease; }
-
-/* small text */
-.small { font-size:13px; color:#666 }
-
-/* responsive */
-@media (max-width:760px){
-  .card{padding:14px}
-  .stat-right{width:200px}
-  .label{min-width:84px}
-  .result{ font-size:14px; text-align:center; }
-}
-
-  /* --- Make main game buttons perfect squares --- */
-/* Put this AFTER your existing styles so it overrides previous width/padding rules. */
-
 :root {
-  --main-icon-size: 48px; /* change to 40/44/56 if you want bigger/smaller squares */
+  --page-bg: #eceff1;
+  --card-bg: #ffffff;
+  --muted: #cfcfcf;
+  --muted-2: #bfbfbf;
+  --accent-green: #4CAF50;
+  --accent-yellow: #FFC107;
+  --accent-red: #F44336;
+  --card-width: 760px;
+  --shadow: 0 10px 30px rgba(20,20,30,0.06);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+  --main-icon-size: 48px;
 }
 
-/* Base square style for all game-row icon buttons */
+/* --- Base Layout --- */
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  background: var(--page-bg);
+  color: #222;
+}
+
+.wrap {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+}
+
+.card {
+  width: 100%;
+  max-width: var(--card-width);
+  background: var(--card-bg);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+header h1 {
+  font-size: 18px;
+  margin: 0;
+}
+
+nav {
+  display: flex;
+  gap: 8px;
+}
+
+nav button {
+  border: none;
+  background: transparent;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #555;
+  font-weight: 700;
+}
+
+nav button.active {
+  background: #dfe4e7;
+  color: #111;
+}
+
+/* --- Text Input --- */
+input.word-input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e6e6e6;
+  font-size: 16px;
+  min-width: 220px;
+  box-sizing: border-box;
+  height: 44px;
+}
+
+/* --- Play Row --- */
+.play-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+/* --- Unified Transparent Buttons --- */
+button,
+.icon-btn,
+.btn-play,
+.auto-btn,
+.segmented button,
+.stats-wipe-btn {
+  background: transparent;
+  border: 2px solid var(--muted-2);
+  color: var(--muted-2);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+/* --- Square Main Icon Buttons --- */
 .btn-play,
 .icon-btn,
 .auto-btn {
-  width: var(--main-icon-size) !important;
-  height: var(--main-icon-size) !important;
-  padding: 0 !important;               /* remove horizontal padding so it's a square */
-  min-width: 0 !important;             /* override any min-width */
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 12px !important;      /* match other buttons' rounding */
-  box-sizing: border-box !important;
+  width: var(--main-icon-size);
+  height: var(--main-icon-size);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
-/* keep icon size legible inside the square */
 .btn-play i,
 .icon-btn i,
-.auto-btn i {
-  font-size: 18px; /* tweak for balance; increase to 20-22 for larger squares */
+.auto-btn i,
+.stats-wipe-btn i {
+  font-size: 18px;
   line-height: 1;
-  pointer-events: none;
+  color: inherit;
 }
 
-/* ensure the auto-btn (which previously had extra padding/checked state) still styles correctly */
-.auto-btn {
-  padding: 0 !important;
-}
-
-/* hover & focus visual stability */
-.btn-play:hover,
+/* --- Button Hover/Active --- */
+button:hover,
 .icon-btn:hover,
+.btn-play:hover,
 .auto-btn:hover,
-.btn-play:focus,
-.icon-btn:focus,
-.auto-btn:focus {
-  filter: brightness(.98);
-  outline: none;
+.segmented button:hover,
+.stats-wipe-btn:hover {
+  background: rgba(0,0,0,0.03);
+  color: #111;
+  filter: brightness(1.05);
 }
 
-/* disabled state keeps square look */
-.btn-play[disabled],
+button:active,
+.icon-btn:active,
+.btn-play:active {
+  background: rgba(0,0,0,0.08);
+}
+
+/* Disabled */
+button[disabled],
 .icon-btn[disabled],
+.btn-play[disabled],
 .auto-btn[disabled] {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* If you have textual buttons inside the same container, ensure spacing doesn't collapse */
-.play-row { gap: 12px; align-items: center; }
-
-/* Optional: smaller squares on mobile */
-@media (max-width:480px){
-  :root { --main-icon-size: 44px; }
-  .btn-play i,
-  .icon-btn i,
-  .auto-btn i { font-size: 16px; }
+/* --- Toggle & Active States --- */
+.segmented button.on {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  background: rgba(76,175,80,0.08);
 }
 
-/* make stats wipe icon visually consistent with main icon buttons */
+.segmented button[data-val="easy"].on {
+  border-color: var(--accent-yellow);
+  color: var(--accent-yellow);
+  background: rgba(255,193,7,0.08);
+}
+
+.segmented button[data-val="hardcore"].on {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+  background: rgba(244,67,54,0.08);
+}
+
+.auto-btn.checked {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  background: rgba(76,175,80,0.08);
+}
+
+/* --- Wipe Button --- */
 .stats-wipe-btn {
   width: 44px;
   height: 44px;
@@ -188,11 +197,230 @@ input.word-input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+}
+
+.stats-wipe-btn:hover {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+/* --- Result Text --- */
+.result {
+  font-weight: 700;
+  color: #444;
+  flex: 1;
+  text-align: center;
+}
+
+/* --- Hint Line --- */
+.hint-line {
+  margin-top: 8px;
+  font-family: var(--mono);
+  color: #999;
+  text-align: center;
+  min-height: 20px;
+  transition: opacity 0.25s ease;
+}
+
+/* --- Feedback Bars --- */
+.feedback-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.feedback-bar {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  position: relative;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.segment {
+  flex: 1;
+  height: 14px;
+  background: var(--muted);
+  border-radius: 10px;
+  transition: background 0.22s ease, flex 0.22s ease, width 0.22s ease;
+  position: relative;
+}
+
+.merged {
+  position: absolute;
+  height: 14px;
+  background: var(--accent-green);
+  border-radius: 10px;
+  transition: left 0.22s ease, width 0.22s ease, opacity 0.22s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* --- Controls Section --- */
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  align-items: center;
+}
+
+.score-area {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 110px;
+  justify-content: flex-end;
+}
+
+.score {
+  font-weight: 800;
+  color: #222;
+}
+
+/* --- Segmented Controls --- */
+.segmented {
+  display: flex;
+  gap: 6px;
+  background: transparent;
+  border-radius: 10px;
+  padding: 6px;
+}
+
+.segmented button {
+  background: transparent;
+  border: 2px solid var(--muted-2);
+  border-radius: 8px;
+  color: #666;
+  font-weight: 700;
+  position: relative;
+  padding: 8px 10px;
+}
+
+/* --- Settings Rows --- */
+.settings-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.label {
+  min-width: 110px;
+  font-size: 14px;
+  color: #666;
+}
+
+.control {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --- Select Box --- */
+.select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e6e6e6;
+  background: #fff;
+  font-size: 14px;
+  width: 100%;
   box-sizing: border-box;
 }
-.stats-wipe-btn i { font-size: 16px; line-height: 1; }
-  
+
+/* --- Stats --- */
+.stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.stat-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  border-radius: 10px;
+  background: #fbfbfb;
+  border: 1px solid #f0f0f0;
+}
+
+.stat-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  font-weight: 600;
+}
+
+.stat-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 300px;
+  justify-content: flex-end;
+}
+
+/* --- Mini Progress Bars in Stats --- */
+.mini-bar {
+  display: flex;
+  gap: 6px;
+  width: 180px;
+  height: 12px;
+  align-items: center;
+  position: relative;
+}
+
+.mini-seg {
+  flex: 1;
+  height: 100%;
+  border-radius: 8px;
+  background: var(--muted);
+  position: relative;
+  transition: background 0.18s ease;
+}
+
+/* --- Tooltip --- */
+.mini-tooltip {
+  position: fixed;
+  z-index: 9999;
+  padding: 6px 8px;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  white-space: pre-line;
+  pointer-events: none;
+  transform: translateY(-6px);
+  opacity: 0;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+/* --- Misc --- */
+.small {
+  font-size: 13px;
+  color: #666;
+}
+
+.play-row { gap: 12px; }
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 760px) {
+  .card { padding: 14px; }
+  .stat-right { width: 200px; }
+  .label { min-width: 84px; }
+  .result { font-size: 14px; text-align: center; }
+  :root { --main-icon-size: 44px; }
+  .btn-play i,
+  .icon-btn i,
+  .auto-btn i,
+  .stats-wipe-btn i { font-size: 16px; }
+} 
 </style>
 </head>
 <body>
