@@ -1298,8 +1298,6 @@ async function onCheck(){
       inputAnswer.style.background = 'rgba(244,67,54,0.06)';
       inputAnswer.style.color = '#111';
 
-      resultText.textContent = '';
-
       colorAllSegments(COLOR_RED);
       stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: 0, correct:false, incomplete:false, mode: settings.mode });
       persistStats();
