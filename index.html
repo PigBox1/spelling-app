@@ -1260,9 +1260,6 @@ async function onCheck(){
     inputAnswer.style.background = 'rgba(76,175,80,0.06)';
     inputAnswer.style.color = '#111';
 
-    // clear any separate resultText (textbox is now authoritative)
-    resultText.textContent = '';
-
     stats.push({ word: currentWord, attempts: attemptsThisRound.slice(), level: complexityInfo(currentWord).label, time: secs, points: pts, correct:true, incomplete:false, mode: settings.mode });
     persistStats();
 
