@@ -47,7 +47,7 @@ html, body {
   background: var(--card-bg);
   border-radius: var(--ui-radius);
   box-shadow: var(--shadow);
-  padding: 20px 20px; /* ALIGNMENT FIX: slightly tighten horizontal padding to align inner rows */
+  padding: 20px;
   box-sizing: border-box;
 }
 
@@ -57,8 +57,6 @@ header {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
-  box-sizing: border-box;
-  width: 100%;
 }
 
 header h1 {
@@ -105,7 +103,7 @@ input.word-input {
   color: #111;
   padding: 0 16px;
   box-sizing: border-box;
-  min-width: 200px;
+  min-width: 250px;
   transition: all 0.25s ease;
 }
 
@@ -351,8 +349,6 @@ button[disabled],
   gap: 10px;
   margin-top: 12px;
   align-items: center;
-  box-sizing: border-box;
-  width: 100%;
 }
 
 /* --- Score box (right-aligned, outlined, consistent with textbox style) --- */
@@ -539,7 +535,7 @@ button[disabled],
 
 /* --- Misc --- */
 .small {
-  font-size: 12px;
+  font-size: 13px;
   color: #666;
 }
 
@@ -548,10 +544,8 @@ button[disabled],
   align-items: center;
   gap: 12px;
   margin-bottom: 20px;
-  margin-left: 0; /* ALIGNMENT FIX: remove negative compensation */
-  margin-right: 0; /* ALIGNMENT FIX: remove negative compensation */
-  box-sizing: border-box;
-  width: 100%;
+  margin-left: -2px; /* compensate for border width */
+  margin-right: -2px; /* keeps it perfectly aligned with tabs */
 }
 
 .play-row .btn-play {
@@ -560,14 +554,21 @@ button[disabled],
 
 .play-row input.word-input {
   flex: 1;
-  min-width: 75;
+  min-width: 0;
   margin-right: 0;
   border-radius: var(--ui-radius);
   border: var(--ui-border) solid var(--muted-2);
   box-sizing: border-box;
 }
 
+.play-row .result {
+  flex: 0 0 auto;
+  max-width: 100px;
+  text-align: right;
+}
 
+
+/* --- Responsive --- */
 /* --- Responsive --- */
 @media (max-width: 760px) {
   .card { padding: 14px; }
@@ -1555,7 +1556,6 @@ function updateScore(){
     startNewRound(false);
   })();
 
-  
   // persist
   window.addEventListener('beforeunload', ()=>{ persistSettings(); persistStats(); persistDefinitionsCache(); });
 
